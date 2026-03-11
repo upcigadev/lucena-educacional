@@ -44,6 +44,7 @@ import GestaoProfessoresSecretaria from "./pages/secretaria/GestaoProfessoresSec
 import GestaoResponsaveis from "./pages/secretaria/GestaoResponsaveis";
 import GestaoAlunosSecretaria from "./pages/secretaria/GestaoAlunosSecretaria";
 import JustificativasGlobais from "./pages/secretaria/JustificativasGlobais";
+import DetalheTurmaSecretaria from "./pages/secretaria/DetalheTurmaSecretaria";
 
 const queryClient = new QueryClient();
 
