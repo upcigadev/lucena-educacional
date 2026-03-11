@@ -17,6 +17,7 @@ interface MenuItem {
 const menusPorPerfil: Record<PerfilUsuario, MenuItem[]> = {
   responsavel: [
     { label: 'Painel', path: '/responsavel', icon: <Home className="w-5 h-5" /> },
+    { label: 'Notificações', path: '/responsavel/notificacoes', icon: <Bell className="w-5 h-5" /> },
     { label: 'Justificativas', path: '/responsavel/justificativas', icon: <FileText className="w-5 h-5" /> },
     { label: 'Meus Dados', path: '/responsavel/meus-dados', icon: <User className="w-5 h-5" /> },
   ],
