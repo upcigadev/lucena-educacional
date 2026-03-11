@@ -1,12 +1,33 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getSeriesByEscola, escolas } from '@/data/mockData';
+import { getSeriesByEscola, escolas, diretores } from '@/data/mockData';
 
 export default function PainelEscolaDiretor() {
-  const escola = escolas[0]; // João Ferreira - Padre Cícero
-  const seriesEscola = getSeriesByEscola('1');
+  // Simular diretor vinculado a múltiplas escolas
+  const diretor = { ...diretores[0], escolaIds: ['1', '2'] };
+  const escolasDiretor = escolas.filter(e => diretor.escolaIds.includes(e.id));
+  const [escolaSel, setEscolaSel] = useState(escolasDiretor[0]?.id || '1');
+
+  const escola = escolas.find(e => e.id === escolaSel) || escolas[0];
+  const seriesEscola = getSeriesByEscola(escolaSel);
 
   return (
     <div>
+      {escolasDiretor.length > 1 && (
+        <div className="mb-6">
+          <label className="text-sm font-medium text-muted-foreground mr-2">Escola:</label>
+          <select
+            value={escolaSel}
+            onChange={e => setEscolaSel(e.target.value)}
+            className="px-3 py-2 border rounded-md bg-background text-sm"
+          >
+            {escolasDiretor.map(e => (
+              <option key={e.id} value={e.id}>{e.nome}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <h1 className="text-2xl font-bold text-foreground mb-2">{escola.nome}</h1>
       <p className="text-muted-foreground mb-6">Frequência média: <span className="font-bold text-primary">{escola.frequenciaMedia}%</span></p>
 
