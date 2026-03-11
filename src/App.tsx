@@ -36,6 +36,7 @@ import GestaoTurmas from "./pages/diretor/GestaoTurmas";
 import ProfessoresDiretor from "./pages/diretor/ProfessoresDiretor";
 import ConfiguracoesEscola from "./pages/diretor/ConfiguracoesEscola";
 import MeusDadosDiretor from "./pages/diretor/MeusDadosDiretor";
+import ResponsaveisDiretor from "./pages/diretor/ResponsaveisDiretor";
 
 // Secretaria
 import PainelEscolasSecretaria from "./pages/secretaria/PainelEscolasSecretaria";
