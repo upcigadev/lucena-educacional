@@ -44,6 +44,7 @@ import GestaoProfessoresSecretaria from "./pages/secretaria/GestaoProfessoresSec
 import GestaoResponsaveis from "./pages/secretaria/GestaoResponsaveis";
 import GestaoAlunosSecretaria from "./pages/secretaria/GestaoAlunosSecretaria";
 import JustificativasGlobais from "./pages/secretaria/JustificativasGlobais";
+import DetalheTurmaSecretaria from "./pages/secretaria/DetalheTurmaSecretaria";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ function AppRoutes() {
       {/* Secretaria */}
       <Route path="/secretaria" element={<ProtectedLayout><PainelEscolasSecretaria /></ProtectedLayout>} />
       <Route path="/secretaria/escola/:escolaId" element={<ProtectedLayout><EscolaDetalheSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria/escola/:escolaId/turma/:turmaId" element={<ProtectedLayout><DetalheTurmaSecretaria /></ProtectedLayout>} />
       <Route path="/secretaria/diretores" element={<ProtectedLayout><GestaoDiretores /></ProtectedLayout>} />
       <Route path="/secretaria/professores" element={<ProtectedLayout><GestaoProfessoresSecretaria /></ProtectedLayout>} />
       <Route path="/secretaria/responsaveis" element={<ProtectedLayout><GestaoResponsaveis /></ProtectedLayout>} />

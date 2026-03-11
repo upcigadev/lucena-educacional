@@ -28,10 +28,10 @@ export default function EscolaDetalheSecretaria() {
               <p className="text-xs text-muted-foreground mb-3">Frequência média</p>
               <div className="space-y-1">
                 {turmasSerie.map(t => (
-                  <div key={t.id} className="flex justify-between text-sm bg-secondary/50 rounded px-2 py-1">
+                  <Link key={t.id} to={`/secretaria/escola/${escolaId}/turma/${t.id}`} className="flex justify-between text-sm bg-secondary/50 rounded px-2 py-1 hover:bg-secondary transition-colors">
                     <span>{t.nome}</span>
                     <span className="font-medium">{t.frequenciaMedia}%</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
