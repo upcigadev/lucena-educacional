@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { getTurmasByEscola, series, professores, alunos } from '@/data/mockData';
+import { useState, useMemo } from 'react';
+import { getTurmasByEscola, series, professores, alunos, turmas } from '@/data/mockData';
 import { toast } from 'sonner';
 
 export default function GestaoTurmas() {
@@ -7,13 +7,47 @@ export default function GestaoTurmas() {
   const [showForm, setShowForm] = useState(false);
   const [serieSel, setSerieSel] = useState('');
   const [sala, setSala] = useState('');
+  const [profsSel, setProfsSel] = useState<string[]>([]);
 
   const seriesEscola = series.filter(s => s.escolaId === '1');
+  const profsEscola = professores.filter(p => p.escolaIds.includes('1'));
+
+  // Gerar próxima letra automaticamente
+  const proximaLetra = useMemo(() => {
+    if (!serieSel) return '';
+    const serie = series.find(s => s.id === serieSel);
+    if (!serie) return 'A';
+    const turmasSerie = turmas.filter(t => t.serieId === serieSel);
+    const letras = turmasSerie.map(t => {
+      const match = t.nome.match(/\s([A-Z])$/);
+      return match ? match[1] : '';
+    }).filter(Boolean).sort();
+    if (letras.length === 0) return 'A';
+    const ultimaLetra = letras[letras.length - 1];
+    return String.fromCharCode(ultimaLetra.charCodeAt(0) + 1);
+  }, [serieSel]);
+
+  const nomeTurma = useMemo(() => {
+    if (!serieSel) return '';
+    const serie = series.find(s => s.id === serieSel);
+    return serie ? `${serie.nome} ${proximaLetra}` : '';
+  }, [serieSel, proximaLetra]);
+
+  const toggleProf = (id: string) => {
+    setProfsSel(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+  };
 
   const handleCriar = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Turma criada com sucesso!');
+    if (profsSel.length === 0) {
+      toast.error('Selecione ao menos um professor.');
+      return;
+    }
+    toast.success(`Turma "${nomeTurma}" criada com sucesso!`);
     setShowForm(false);
+    setSerieSel('');
+    setSala('');
+    setProfsSel([]);
   };
 
   return (
@@ -36,10 +70,37 @@ export default function GestaoTurmas() {
                 {seriesEscola.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
               </select>
             </div>
+
+            {serieSel && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Nome da Turma (gerado)</label>
+                <input type="text" value={nomeTurma} readOnly className="w-full px-3 py-2 border rounded-md bg-muted text-sm" />
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-1">Sala</label>
               <input type="text" value={sala} onChange={e => setSala(e.target.value)} placeholder="Ex: Sala 10" required className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Professor(es)</label>
+              <div className="space-y-2 border rounded-md p-3 bg-background max-h-40 overflow-y-auto">
+                {profsEscola.map(p => (
+                  <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={profsSel.includes(p.id)}
+                      onChange={() => toggleProf(p.id)}
+                      className="rounded border-input"
+                    />
+                    <span>{p.nome}</span>
+                    <span className="text-xs text-muted-foreground">({p.disciplinas.join(', ')})</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <button type="submit" className="bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium hover:opacity-90">Criar Turma</button>
           </form>
         </div>

@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { alunos } from '@/data/mockData';
-import { StatusBadge } from '@/components/StatusBadge';
+import { useState, useMemo } from 'react';
+import { alunos, escolas, series, turmas } from '@/data/mockData';
 import { toast } from 'sonner';
 
 const cadastrosPendentes = [
@@ -11,14 +10,25 @@ const cadastrosPendentes = [
 export default function GestaoAlunosSecretaria() {
   const [filtroNome, setFiltroNome] = useState('');
   const [filtroEscola, setFiltroEscola] = useState('');
+  const [filtroSerie, setFiltroSerie] = useState('');
+  const [filtroTurma, setFiltroTurma] = useState('');
   const [pendentes, setPendentes] = useState(cadastrosPendentes);
 
-  const escolasUnicas = [...new Set(alunos.map(a => a.escolaNome))];
-  const filtered = alunos.filter(a => {
-    if (filtroNome && !a.nome.toLowerCase().includes(filtroNome.toLowerCase())) return false;
-    if (filtroEscola && a.escolaNome !== filtroEscola) return false;
-    return true;
-  });
+  const seriesFiltradas = useMemo(() => filtroEscola ? series.filter(s => s.escolaId === filtroEscola) : [], [filtroEscola]);
+  const turmasFiltradas = useMemo(() => filtroSerie ? turmas.filter(t => t.serieId === filtroSerie) : [], [filtroSerie]);
+
+  const filtered = useMemo(() => {
+    return alunos.filter(a => {
+      if (filtroNome && !a.nome.toLowerCase().includes(filtroNome.toLowerCase())) return false;
+      if (filtroEscola && a.escolaId !== filtroEscola) return false;
+      if (filtroSerie) {
+        const turmasDaSerie = turmas.filter(t => t.serieId === filtroSerie).map(t => t.id);
+        if (!turmasDaSerie.includes(a.turmaId)) return false;
+      }
+      if (filtroTurma && a.turmaId !== filtroTurma) return false;
+      return true;
+    });
+  }, [filtroNome, filtroEscola, filtroSerie, filtroTurma]);
 
   return (
     <div>
@@ -53,10 +63,25 @@ export default function GestaoAlunosSecretaria() {
       <div className="flex flex-wrap gap-3 mb-4">
         <input type="text" placeholder="Buscar por nome..." value={filtroNome} onChange={e => setFiltroNome(e.target.value)}
           className="px-3 py-2 border rounded-md bg-background text-sm w-64" />
-        <select value={filtroEscola} onChange={e => setFiltroEscola(e.target.value)} className="px-3 py-2 border rounded-md bg-background text-sm">
+        <select value={filtroEscola} onChange={e => { setFiltroEscola(e.target.value); setFiltroSerie(''); setFiltroTurma(''); }}
+          className="px-3 py-2 border rounded-md bg-background text-sm">
           <option value="">Todas as escolas</option>
-          {escolasUnicas.map(e => <option key={e} value={e}>{e}</option>)}
+          {escolas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
         </select>
+        {filtroEscola && (
+          <select value={filtroSerie} onChange={e => { setFiltroSerie(e.target.value); setFiltroTurma(''); }}
+            className="px-3 py-2 border rounded-md bg-background text-sm">
+            <option value="">Todas as séries</option>
+            {seriesFiltradas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+          </select>
+        )}
+        {filtroSerie && (
+          <select value={filtroTurma} onChange={e => setFiltroTurma(e.target.value)}
+            className="px-3 py-2 border rounded-md bg-background text-sm">
+            <option value="">Todas as turmas</option>
+            {turmasFiltradas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+          </select>
+        )}
       </div>
 
       <div className="bg-card rounded-lg border overflow-hidden">

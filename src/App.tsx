@@ -14,6 +14,7 @@ import PainelDependentes from "./pages/responsavel/PainelDependentes";
 import DetalheFilho from "./pages/responsavel/DetalheFilho";
 import JustificativasResponsavel from "./pages/responsavel/JustificativasResponsavel";
 import MeusDadosResponsavel from "./pages/responsavel/MeusDadosResponsavel";
+import NotificacoesResponsavel from "./pages/responsavel/NotificacoesResponsavel";
 
 // Professor
 import PainelEscolasProfessor from "./pages/professor/PainelEscolasProfessor";
@@ -35,6 +36,7 @@ import GestaoTurmas from "./pages/diretor/GestaoTurmas";
 import ProfessoresDiretor from "./pages/diretor/ProfessoresDiretor";
 import ConfiguracoesEscola from "./pages/diretor/ConfiguracoesEscola";
 import MeusDadosDiretor from "./pages/diretor/MeusDadosDiretor";
+import ResponsaveisDiretor from "./pages/diretor/ResponsaveisDiretor";
 
 // Secretaria
 import PainelEscolasSecretaria from "./pages/secretaria/PainelEscolasSecretaria";
@@ -65,6 +67,7 @@ function AppRoutes() {
       {/* Responsável */}
       <Route path="/responsavel" element={<ProtectedLayout><PainelDependentes /></ProtectedLayout>} />
       <Route path="/responsavel/filho/:id" element={<ProtectedLayout><DetalheFilho /></ProtectedLayout>} />
+      <Route path="/responsavel/notificacoes" element={<ProtectedLayout><NotificacoesResponsavel /></ProtectedLayout>} />
       <Route path="/responsavel/justificativas" element={<ProtectedLayout><JustificativasResponsavel /></ProtectedLayout>} />
       <Route path="/responsavel/meus-dados" element={<ProtectedLayout><MeusDadosResponsavel /></ProtectedLayout>} />
 
@@ -86,6 +89,7 @@ function AppRoutes() {
       <Route path="/diretor/novo-aluno" element={<ProtectedLayout><NovoAluno /></ProtectedLayout>} />
       <Route path="/diretor/turmas" element={<ProtectedLayout><GestaoTurmas /></ProtectedLayout>} />
       <Route path="/diretor/professores" element={<ProtectedLayout><ProfessoresDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/responsaveis" element={<ProtectedLayout><ResponsaveisDiretor /></ProtectedLayout>} />
       <Route path="/diretor/configuracoes" element={<ProtectedLayout><ConfiguracoesEscola /></ProtectedLayout>} />
       <Route path="/diretor/meus-dados" element={<ProtectedLayout><MeusDadosDiretor /></ProtectedLayout>} />
 

@@ -17,6 +17,7 @@ interface MenuItem {
 const menusPorPerfil: Record<PerfilUsuario, MenuItem[]> = {
   responsavel: [
     { label: 'Painel', path: '/responsavel', icon: <Home className="w-5 h-5" /> },
+    { label: 'Notificações', path: '/responsavel/notificacoes', icon: <Bell className="w-5 h-5" /> },
     { label: 'Justificativas', path: '/responsavel/justificativas', icon: <FileText className="w-5 h-5" /> },
     { label: 'Meus Dados', path: '/responsavel/meus-dados', icon: <User className="w-5 h-5" /> },
   ],
@@ -29,6 +30,7 @@ const menusPorPerfil: Record<PerfilUsuario, MenuItem[]> = {
     { label: 'Painel', path: '/diretor', icon: <Home className="w-5 h-5" /> },
     { label: 'Justificativas', path: '/diretor/justificativas', icon: <FileText className="w-5 h-5" /> },
     { label: 'Alunos', path: '/diretor/alunos', icon: <Users className="w-5 h-5" /> },
+    { label: 'Responsáveis', path: '/diretor/responsaveis', icon: <UserCheck className="w-5 h-5" /> },
     { label: 'Turmas', path: '/diretor/turmas', icon: <BookOpen className="w-5 h-5" /> },
     { label: 'Professores', path: '/diretor/professores', icon: <GraduationCap className="w-5 h-5" /> },
     { label: 'Configurações', path: '/diretor/configuracoes', icon: <Settings className="w-5 h-5" /> },
