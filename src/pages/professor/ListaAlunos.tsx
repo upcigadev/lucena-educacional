@@ -36,7 +36,7 @@ export default function ListaAlunos() {
               <th className="text-left p-3 text-sm font-medium">CPF</th>
               <th className="text-left p-3 text-sm font-medium">Turma</th>
               <th className="text-left p-3 text-sm font-medium">Freq. Entrada</th>
-              <th className="text-left p-3 text-sm font-medium">Freq. Turma</th>
+              {/* <th className="text-left p-3 text-sm font-medium">Freq. Turma</th> */}
             </tr>
           </thead>
           <tbody>
@@ -50,9 +50,9 @@ export default function ListaAlunos() {
                 <td className="p-3 text-sm font-medium">
                   <span className={a.frequenciaEntrada < 75 ? 'text-destructive' : 'text-primary'}>{a.frequenciaEntrada}%</span>
                 </td>
-                <td className="p-3 text-sm font-medium">
+                {/* <td className="p-3 text-sm font-medium">
                   <span className={a.frequenciaTurma < 75 ? 'text-destructive' : 'text-primary'}>{a.frequenciaTurma}%</span>
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>
