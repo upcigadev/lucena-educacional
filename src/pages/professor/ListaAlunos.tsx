@@ -50,9 +50,9 @@ export default function ListaAlunos() {
                 <td className="p-3 text-sm font-medium">
                   <span className={a.frequenciaEntrada < 75 ? 'text-destructive' : 'text-primary'}>{a.frequenciaEntrada}%</span>
                 </td>
-                <td className="p-3 text-sm font-medium">
+                {/* <td className="p-3 text-sm font-medium">
                   <span className={a.frequenciaTurma < 75 ? 'text-destructive' : 'text-primary'}>{a.frequenciaTurma}%</span>
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>
