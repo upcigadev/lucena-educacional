@@ -81,6 +81,7 @@ function AppRoutes() {
 
       {/* Diretor */}
       <Route path="/diretor" element={<ProtectedLayout><PainelEscolaDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/escola/:escolaId" element={<ProtectedLayout><PainelEscolaDiretor /></ProtectedLayout>} />
       <Route path="/diretor/serie/:serieId" element={<ProtectedLayout><TurmasSerie /></ProtectedLayout>} />
       <Route path="/diretor/turma/:turmaId" element={<ProtectedLayout><DetalheTurma /></ProtectedLayout>} />
       <Route path="/diretor/justificativas" element={<ProtectedLayout><JustificativasDiretor /></ProtectedLayout>} />
