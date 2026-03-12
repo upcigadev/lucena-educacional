@@ -36,7 +36,7 @@ export default function ListaAlunos() {
               <th className="text-left p-3 text-sm font-medium">CPF</th>
               <th className="text-left p-3 text-sm font-medium">Turma</th>
               <th className="text-left p-3 text-sm font-medium">Freq. Entrada</th>
-              <th className="text-left p-3 text-sm font-medium">Freq. Turma</th>
+              {/* <th className="text-left p-3 text-sm font-medium">Freq. Turma</th> */}
             </tr>
           </thead>
           <tbody>
