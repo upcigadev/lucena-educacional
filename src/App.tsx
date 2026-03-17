@@ -49,6 +49,7 @@ import NovoAlunoSecretaria from "./pages/secretaria/NovoAlunoSecretaria";
 import JustificativasGlobais from "./pages/secretaria/JustificativasGlobais";
 import DetalheTurmaSecretaria from "./pages/secretaria/DetalheTurmaSecretaria";
 import TurmasSerieSecretaria from "./pages/secretaria/TurmasSerieSecretaria";
+import DetalheAlunoSecretaria from "./pages/secretaria/DetalheAlunoSecretaria";
 
 const queryClient = new QueryClient();
 
