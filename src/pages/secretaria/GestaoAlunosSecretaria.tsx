@@ -98,8 +98,8 @@ export default function GestaoAlunosSecretaria() {
           </tr></thead>
           <tbody>
             {filtered.map(a => (
-              <tr key={a.id} className="border-b">
-                <td className="p-3 text-sm font-medium">{a.nome}</td>
+              <tr key={a.id} className="border-b hover:bg-secondary/30 cursor-pointer transition-colors" onClick={() => navigate(`/secretaria/aluno/${a.id}`)}>
+                <td className="p-3 text-sm font-medium text-primary hover:underline">{a.nome}</td>
                 <td className="p-3 text-sm">{a.cpf}</td>
                 <td className="p-3 text-sm">{a.escolaNome}</td>
                 <td className="p-3 text-sm">{a.serieName}</td>
