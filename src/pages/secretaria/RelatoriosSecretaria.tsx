@@ -5,6 +5,7 @@ import { exportarPdf } from '@/lib/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileDown, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
 function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
   if (filters.periodoInicio && filters.periodoFim) {
@@ -119,6 +120,22 @@ export default function RelatoriosSecretaria() {
               linhas: rankingEscolas.map((e, i) => [i + 1, e.nome, e.qtdAlunos, `${e.media}%`]),
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
+          {/* Chart */}
+          <div className="bg-card rounded-lg border p-4 mb-4">
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={rankingEscolas.map(e => ({ nome: e.nome.replace('Escola Municipal ', 'E.M. '), media: e.media }))} margin={{ top: 10, right: 20, left: 0, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="nome" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: number) => [`${v}%`, 'Frequência']} />
+                <Bar dataKey="media" radius={[6, 6, 0, 0]}>
+                  {rankingEscolas.map((e, i) => (
+                    <Cell key={i} className={e.media < 75 ? 'fill-destructive' : 'fill-primary'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
           <div className="bg-card rounded-lg border overflow-hidden">
             <table className="w-full">
               <thead><tr className="border-b bg-secondary">
@@ -191,6 +208,20 @@ export default function RelatoriosSecretaria() {
               colunas: ['Escola', 'Justificadas', 'Não Justificadas', 'Total'],
               linhas: faltasPorEscola.map(f => [f.escola, f.justificadas, f.naoJustificadas, f.justificadas + f.naoJustificadas]),
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
+          </div>
+          {/* Chart */}
+          <div className="bg-card rounded-lg border p-4 mb-4">
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={faltasPorEscola.map(f => ({ nome: f.escola.replace('Escola Municipal ', 'E.M. '), justificadas: f.justificadas, naoJustificadas: f.naoJustificadas }))} margin={{ top: 10, right: 20, left: 0, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="nome" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="justificadas" name="Justificadas" className="fill-amber-500" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="naoJustificadas" name="Não Justificadas" className="fill-destructive" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
           <div className="bg-card rounded-lg border overflow-hidden">
             <table className="w-full">

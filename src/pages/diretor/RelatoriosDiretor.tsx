@@ -5,6 +5,7 @@ import { exportarPdf } from '@/lib/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileDown, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend, ReferenceLine } from 'recharts';
 
 // Diretor gerencia escola id=1 (mock)
 const ESCOLA_ID = '1';
@@ -116,6 +117,19 @@ export default function RelatoriosDiretor() {
               linhas: freqGeral.map(f => [f.mes, `${f.frequencia}%`]),
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
+          {/* Line chart */}
+          <div className="bg-card rounded-lg border p-4 mb-4">
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={freqGeral} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: number) => [`${v}%`, 'Frequência']} />
+                <ReferenceLine y={75} stroke="hsl(var(--destructive))" strokeDasharray="5 5" label={{ value: '75%', position: 'right', fontSize: 11 }} />
+                <Line type="monotone" dataKey="frequencia" className="stroke-primary" strokeWidth={3} dot={{ r: 6, className: 'fill-primary' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             {freqGeral.map(f => (
               <div key={f.mes} className="bg-card rounded-lg border p-6 text-center">
@@ -175,6 +189,24 @@ export default function RelatoriosDiretor() {
               colunas: ['Tipo', 'Quantidade'],
               linhas: [['Justificadas', faltasResumo.justificadas], ['Não Justificadas', faltasResumo.naoJustificadas], ['Total', faltasResumo.justificadas + faltasResumo.naoJustificadas]],
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
+          </div>
+          {/* Bar chart */}
+          <div className="bg-card rounded-lg border p-4 mb-4">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={[
+                { tipo: 'Justificadas', quantidade: faltasResumo.justificadas },
+                { tipo: 'Não Justificadas', quantidade: faltasResumo.naoJustificadas },
+              ]} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="tipo" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="quantidade" radius={[6, 6, 0, 0]}>
+                  <Cell className="fill-amber-500" />
+                  <Cell className="fill-destructive" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-card rounded-lg border p-6 text-center">
