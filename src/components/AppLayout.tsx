@@ -24,6 +24,7 @@ const menusPorPerfil: Record<PerfilUsuario, MenuItem[]> = {
   professor: [
     { label: 'Escolas', path: '/professor', icon: <School className="w-5 h-5" /> },
     { label: 'Alunos', path: '/professor/alunos', icon: <Users className="w-5 h-5" /> },
+    { label: 'Relatórios', path: '/professor/relatorios', icon: <BarChart3 className="w-5 h-5" /> },
     { label: 'Meus Dados', path: '/professor/meus-dados', icon: <User className="w-5 h-5" /> },
   ],
   diretor: [
