@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { professores as professoresData, escolas } from '@/data/mockData';
 import { toast } from 'sonner';
-import { formatCpf } from '@/lib/masks';
+import { formatCpf, validateCpf } from '@/lib/masks';
 import { X } from 'lucide-react';
 
 export default function GestaoProfessoresSecretaria() {
