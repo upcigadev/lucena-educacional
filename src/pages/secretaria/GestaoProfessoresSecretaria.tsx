@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { professores as professoresData, escolas } from '@/data/mockData';
 import { toast } from 'sonner';
+import { formatCpf } from '@/lib/masks';
 import { X } from 'lucide-react';
 
 export default function GestaoProfessoresSecretaria() {
@@ -71,7 +72,7 @@ export default function GestaoProfessoresSecretaria() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">CPF</label>
-              <input type="text" value={cpf} onChange={e => setCpf(e.target.value)} required placeholder="000.000.000-00" className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+              <input type="text" value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} required placeholder="000.000.000-00" maxLength={14} className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Disciplinas (separadas por vírgula)</label>

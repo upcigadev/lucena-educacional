@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PerfilUsuario } from '@/data/mockData';
 import { School } from 'lucide-react';
 import logo from '@/assets/logo-educacional.png';
+import { formatCpf } from '@/lib/masks';
 
 const perfis: { value: PerfilUsuario; label: string; desc: string }[] = [
   { value: 'responsavel', label: 'Responsável', desc: 'Acompanhe a frequência dos seus filhos' },
@@ -11,14 +12,6 @@ const perfis: { value: PerfilUsuario; label: string; desc: string }[] = [
   { value: 'diretor', label: 'Diretor', desc: 'Administre sua escola' },
   { value: 'secretaria', label: 'Secretaria', desc: 'Gestão municipal de educação' },
 ];
-
-function formatCPF(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return digits.slice(0, 3) + '.' + digits.slice(3);
-  if (digits.length <= 9) return digits.slice(0, 3) + '.' + digits.slice(3, 6) + '.' + digits.slice(6);
-  return digits.slice(0, 3) + '.' + digits.slice(3, 6) + '.' + digits.slice(6, 9) + '-' + digits.slice(9);
-}
 
 export default function Login() {
   const [cpf, setCpf] = useState('');
@@ -51,7 +44,7 @@ export default function Login() {
               <input
                 type="text"
                 value={cpf}
-                onChange={e => setCpf(formatCPF(e.target.value))}
+                onChange={e => setCpf(formatCpf(e.target.value))}
                 placeholder="000.000.000-00"
                 className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
