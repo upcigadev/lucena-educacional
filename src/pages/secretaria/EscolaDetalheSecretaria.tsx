@@ -56,6 +56,24 @@ export default function EscolaDetalheSecretaria() {
   const [editTurmaModalOpen, setEditTurmaModalOpen] = useState(false);
   const [editTurmaId, setEditTurmaId] = useState<string | null>(null);
   const [editTurmaSala, setEditTurmaSala] = useState('');
+  const [editProfsSel, setEditProfsSel] = useState<string[]>([]);
+  const [editAlunosBusca, setEditAlunosBusca] = useState('');
+
+  const profsEscola = useMemo(() => professores.filter(p => p.escolaIds.includes(escolaId || '')), [escolaId]);
+  const alunosEscola = useMemo(() => alunos.filter(a => a.escolaId === escolaId), [escolaId]);
+
+  const alunosDaTurmaEdit = useMemo(() => {
+    if (!editTurmaId) return [];
+    return alunos.filter(a => a.turmaId === editTurmaId);
+  }, [editTurmaId]);
+
+  const alunosDisponiveisEdit = useMemo(() => {
+    if (!editTurmaId) return [];
+    return alunosEscola.filter(a =>
+      a.turmaId !== editTurmaId &&
+      (editAlunosBusca === '' || a.nome.toLowerCase().includes(editAlunosBusca.toLowerCase()) || a.matricula.includes(editAlunosBusca))
+    );
+  }, [editTurmaId, alunosEscola, editAlunosBusca]);
 
   // Delete turma
   const [deleteTurmaId, setDeleteTurmaId] = useState<string | null>(null);
