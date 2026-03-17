@@ -61,11 +61,11 @@ export default function CadastroResponsavelModal({ open, onOpenChange, onCadastr
           </div>
           <div>
             <Label htmlFor="novoRespCpf">CPF</Label>
-            <Input id="novoRespCpf" value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className="mt-1" />
+            <Input id="novoRespCpf" value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="novoRespWhatsapp">WhatsApp</Label>
-            <Input id="novoRespWhatsapp" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(00) 00000-0000" className="mt-1" />
+            <Input id="novoRespWhatsapp" value={whatsapp} onChange={e => setWhatsapp(formatPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="novoRespParentesco">Parentesco</Label>
