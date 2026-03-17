@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { escolas, getSeriesByEscola, getTurmasBySerie, series, turmas } from '@/data/mockData';
-import { ArrowLeft, Plus, Clock, GraduationCap } from 'lucide-react';
+import { escolas, getSeriesByEscola, getTurmasBySerie, series, turmas, Turma } from '@/data/mockData';
+import { ArrowLeft, Plus, Clock, GraduationCap, Pencil, Trash2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
