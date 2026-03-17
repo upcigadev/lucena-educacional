@@ -19,11 +19,9 @@ export default function NovoAluno() {
   const [serieSel, setSerieSel] = useState('');
   const [turmaSel, setTurmaSel] = useState('');
 
-  // Aba Responsável
-  const [nomeResp, setNomeResp] = useState('');
-  const [cpfResp, setCpfResp] = useState('');
-  const [telefoneResp, setTelefoneResp] = useState('');
-
+  // Responsáveis vinculados
+  const [buscaResp, setBuscaResp] = useState('');
+  const [responsaveisVinculados, setResponsaveisVinculados] = useState<string[]>([]);
   // Aba Biometria
   const [bioCapturando, setBioCapturando] = useState(false);
   const [bioRegistrada, setBioRegistrada] = useState(false);
