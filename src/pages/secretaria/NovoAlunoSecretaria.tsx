@@ -199,32 +199,35 @@ export default function NovoAlunoSecretaria() {
                     )}
                   </div>
 
-                  <div>
+                  <div className="flex items-center justify-between">
                     <Label>Responsáveis Vinculados</Label>
-                    {responsaveisVinculados.length === 0 ? (
-                      <p className="text-sm text-muted-foreground mt-2">Nenhum responsável vinculado. Use a busca acima para adicionar.</p>
-                    ) : (
-                      <div className="space-y-2 mt-2">
-                        {responsaveisVinculados.map(id => {
-                          const resp = responsaveis.find(r => r.id === id);
-                          if (!resp) return null;
-                          return (
-                            <div key={id} className="flex items-center justify-between border rounded-md px-3 py-2 bg-muted/30">
-                              <div>
-                                <span className="text-sm font-medium">{resp.nome}</span>
-                                <span className="text-xs text-muted-foreground ml-2">{resp.cpf}</span>
-                                <span className="text-xs text-muted-foreground ml-2">({resp.parentesco})</span>
-                                <span className="text-xs text-muted-foreground ml-2">{resp.whatsapp}</span>
-                              </div>
-                              <button type="button" onClick={() => desvincularResponsavel(id)} className="text-destructive hover:opacity-70">
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <Button type="button" variant="outline" size="sm" onClick={() => setModalNovoResp(true)}>
+                      <UserPlus className="w-4 h-4 mr-1" /> Cadastrar Novo Responsável
+                    </Button>
                   </div>
+                  {responsaveisVinculados.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhum responsável vinculado. Use a busca acima para adicionar ou cadastre um novo.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {responsaveisVinculados.map(id => {
+                        const resp = responsaveis.find(r => r.id === id) || novosResps.find(r => r.id === id);
+                        if (!resp) return null;
+                        return (
+                          <div key={id} className="flex items-center justify-between border rounded-md px-3 py-2 bg-muted/30">
+                            <div>
+                              <span className="text-sm font-medium">{resp.nome}</span>
+                              <span className="text-xs text-muted-foreground ml-2">{resp.cpf}</span>
+                              <span className="text-xs text-muted-foreground ml-2">({resp.parentesco})</span>
+                              {'whatsapp' in resp && <span className="text-xs text-muted-foreground ml-2">{resp.whatsapp}</span>}
+                            </div>
+                            <button type="button" onClick={() => desvincularResponsavel(id)} className="text-destructive hover:opacity-70">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
