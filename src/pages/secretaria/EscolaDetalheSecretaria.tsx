@@ -352,6 +352,40 @@ export default function EscolaDetalheSecretaria() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* ===== MODAL EDITAR TURMA ===== */}
+      <Dialog open={editTurmaModalOpen} onOpenChange={setEditTurmaModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Turma</DialogTitle>
+            <DialogDescription>{editingTurma ? `Editando: ${editingTurma.nome}` : ''}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Nome da Turma</Label>
+              <Input value={editingTurma?.nome || ''} readOnly className="mt-1 bg-muted" />
+            </div>
+            <div>
+              <Label>Sala (número)</Label>
+              <Input type="number" value={editTurmaSala} onChange={e => setEditTurmaSala(e.target.value)} min={1} className="mt-1" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTurmaModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSalvarEditTurma}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== CONFIRMAR EXCLUSÃO TURMA ===== */}
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Excluir Turma"
+        description={`Tem certeza que deseja excluir a turma "${turmasLocais.find(t => t.id === deleteTurmaId)?.nome}"? Esta ação não pode ser desfeita.`}
+        onConfirm={handleDeleteTurma}
+        confirmLabel="Excluir"
+        variant="destructive"
+      />
     </div>
   );
 }
