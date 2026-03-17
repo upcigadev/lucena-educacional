@@ -11,6 +11,21 @@ interface CadastroResponsavelModalProps {
   onCadastrado: (novoResp: { id: string; nome: string; cpf: string; whatsapp: string; parentesco: string }) => void;
 }
 
+const formatCpf = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  return digits
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+};
+
+const formatPhone = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : '';
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
 export default function CadastroResponsavelModal({ open, onOpenChange, onCadastrado }: CadastroResponsavelModalProps) {
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
@@ -46,11 +61,11 @@ export default function CadastroResponsavelModal({ open, onOpenChange, onCadastr
           </div>
           <div>
             <Label htmlFor="novoRespCpf">CPF</Label>
-            <Input id="novoRespCpf" value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className="mt-1" />
+            <Input id="novoRespCpf" value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="novoRespWhatsapp">WhatsApp</Label>
-            <Input id="novoRespWhatsapp" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(00) 00000-0000" className="mt-1" />
+            <Input id="novoRespWhatsapp" value={whatsapp} onChange={e => setWhatsapp(formatPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="novoRespParentesco">Parentesco</Label>
