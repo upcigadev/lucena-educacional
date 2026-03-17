@@ -5,6 +5,7 @@ import { exportarPdf } from '@/lib/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileDown, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
 function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
   if (filters.periodoInicio && filters.periodoFim) {
