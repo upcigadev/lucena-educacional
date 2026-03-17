@@ -99,8 +99,16 @@ export default function GestaoTurmas() {
     setEditId(null);
   };
 
+  const alunosNaTurmaDelete = deleteId ? alunos.filter(a => a.turmaId === deleteId).length : 0;
+
   const handleDelete = () => {
     if (!deleteId) return;
+    if (alunosNaTurmaDelete > 0) {
+      toast.error(`Não é possível excluir: esta turma possui ${alunosNaTurmaDelete} aluno(s) vinculado(s).`);
+      setDeleteConfirmOpen(false);
+      setDeleteId(null);
+      return;
+    }
     const turma = lista.find(t => t.id === deleteId);
     setLista(prev => prev.filter(t => t.id !== deleteId));
     toast.success(`Turma "${turma?.nome}" excluída.`);

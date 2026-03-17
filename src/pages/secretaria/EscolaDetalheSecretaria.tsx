@@ -111,8 +111,16 @@ export default function EscolaDetalheSecretaria() {
     setEditTurmaId(null);
   };
 
+  const alunosNaTurmaDelete = deleteTurmaId ? alunos.filter(a => a.turmaId === deleteTurmaId).length : 0;
+
   const handleDeleteTurma = () => {
     if (!deleteTurmaId) return;
+    if (alunosNaTurmaDelete > 0) {
+      toast.error(`Não é possível excluir: esta turma possui ${alunosNaTurmaDelete} aluno(s) vinculado(s).`);
+      setDeleteConfirmOpen(false);
+      setDeleteTurmaId(null);
+      return;
+    }
     const turma = turmasLocais.find(t => t.id === deleteTurmaId);
     setTurmasLocais(prev => prev.filter(t => t.id !== deleteTurmaId));
     toast.success(`Turma "${turma?.nome}" excluída.`);
