@@ -34,6 +34,7 @@ const menusPorPerfil: Record<PerfilUsuario, MenuItem[]> = {
     { label: 'Responsáveis', path: '/diretor/responsaveis', icon: <UserCheck className="w-5 h-5" /> },
     { label: 'Turmas', path: '/diretor/turmas', icon: <BookOpen className="w-5 h-5" /> },
     { label: 'Professores', path: '/diretor/professores', icon: <GraduationCap className="w-5 h-5" /> },
+    { label: 'Relatórios', path: '/diretor/relatorios', icon: <BarChart3 className="w-5 h-5" /> },
     { label: 'Configurações', path: '/diretor/configuracoes', icon: <Settings className="w-5 h-5" /> },
     { label: 'Meus Dados', path: '/diretor/meus-dados', icon: <User className="w-5 h-5" /> },
   ],
