@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useState } from 'react';
 import { alunos, gerarFrequencia, getResponsaveisByAluno } from '@/data/mockData';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
-import { ArrowLeft, MessageSquare, Save } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function DetalheAlunoDiretor() {
