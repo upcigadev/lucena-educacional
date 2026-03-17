@@ -44,7 +44,7 @@ export default function Login() {
               <input
                 type="text"
                 value={cpf}
-                onChange={e => setCpf(formatCPF(e.target.value))}
+                onChange={e => setCpf(formatCpf(e.target.value))}
                 placeholder="000.000.000-00"
                 className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
