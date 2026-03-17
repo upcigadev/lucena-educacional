@@ -94,6 +94,22 @@ export default function RelatoriosProfessor() {
               linhas: freqPorTurma.map(t => [t.nome, t.sala, t.qtdAlunos, `${t.media}%`]),
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
+          {/* Bar chart */}
+          <div className="bg-card rounded-lg border p-4 mb-4">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={freqPorTurma.map(t => ({ nome: t.nome, media: t.media }))} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="nome" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: number) => [`${v}%`, 'Frequência']} />
+                <Bar dataKey="media" radius={[6, 6, 0, 0]}>
+                  {freqPorTurma.map((t, i) => (
+                    <Cell key={i} className={t.media < 75 ? 'fill-destructive' : 'fill-primary'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             {freqPorTurma.map(t => (
               <div key={t.id} className="bg-card rounded-lg border p-6 text-center">
