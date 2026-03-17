@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { ConfirmModal } from '@/components/ConfirmModal';
 
 export default function EscolaDetalheSecretaria() {
   const { escolaId } = useParams();
