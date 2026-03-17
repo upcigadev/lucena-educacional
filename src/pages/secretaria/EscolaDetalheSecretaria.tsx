@@ -65,9 +65,8 @@ export default function EscolaDetalheSecretaria() {
   };
 
   const handleSalvarTurma = () => {
-    toast.success(`Turma "${novaTurmaNome}" criada com sucesso!`);
+    toast.success(`Turma "${nomeTurmaGerado}" criada com sucesso!`);
     setTurmaModalOpen(false);
-    setNovaTurmaNome('');
     setNovaTurmaSerie('');
     setNovaTurmaSala('');
     setTurmaSobrescrever(false);
