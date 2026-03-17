@@ -52,6 +52,19 @@ export default function EscolaDetalheSecretaria() {
     const serie = series.find(s => s.id === novaTurmaSerie);
     return serie ? `${serie.nome} ${proximaLetraTurma}` : '';
   }, [novaTurmaSerie, proximaLetraTurma]);
+  // Edit turma
+  const [editTurmaModalOpen, setEditTurmaModalOpen] = useState(false);
+  const [editTurmaId, setEditTurmaId] = useState<string | null>(null);
+  const [editTurmaSala, setEditTurmaSala] = useState('');
+
+  // Delete turma
+  const [deleteTurmaId, setDeleteTurmaId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  // Local turma list for mutations
+  const [turmasLocais, setTurmasLocais] = useState<Turma[]>(() => turmas.filter(t => t.escolaId === escolaId));
+
+  const getTurmasLocalBySerie = (serieId: string) => turmasLocais.filter(t => t.serieId === serieId);
 
   if (!escola) return <div>Escola não encontrada</div>;
 
