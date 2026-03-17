@@ -190,6 +190,24 @@ export default function RelatoriosDiretor() {
               linhas: [['Justificadas', faltasResumo.justificadas], ['Não Justificadas', faltasResumo.naoJustificadas], ['Total', faltasResumo.justificadas + faltasResumo.naoJustificadas]],
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
+          {/* Bar chart */}
+          <div className="bg-card rounded-lg border p-4 mb-4">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={[
+                { tipo: 'Justificadas', quantidade: faltasResumo.justificadas },
+                { tipo: 'Não Justificadas', quantidade: faltasResumo.naoJustificadas },
+              ]} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="tipo" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="quantidade" radius={[6, 6, 0, 0]}>
+                  <Cell className="fill-amber-500" />
+                  <Cell className="fill-destructive" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-card rounded-lg border p-6 text-center">
               <div className="text-sm text-muted-foreground mb-1">Justificadas</div>
