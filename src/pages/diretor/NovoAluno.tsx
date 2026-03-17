@@ -49,6 +49,12 @@ export default function NovoAluno() {
 
   const desvincularResponsavel = (id: string) => {
     setResponsaveisVinculados(prev => prev.filter(r => r !== id));
+    setNovosResps(prev => prev.filter(r => r.id !== id));
+  };
+
+  const handleNovoRespCadastrado = (novoResp: { id: string; nome: string; cpf: string; whatsapp: string; parentesco: string }) => {
+    setNovosResps(prev => [...prev, novoResp]);
+    setResponsaveisVinculados(prev => [...prev, novoResp.id]);
   };
 
   const handleCapturarBiometria = () => {
