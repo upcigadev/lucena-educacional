@@ -5,6 +5,7 @@ import { exportarPdf } from '@/lib/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileDown, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
 // Professor id=1 (Carlos Mendes), turmas t1, t2, t7
 const PROF_TURMA_IDS = ['t1', 't2', 't7'];
