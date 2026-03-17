@@ -45,6 +45,7 @@ import GestaoDiretores from "./pages/secretaria/GestaoDiretores";
 import GestaoProfessoresSecretaria from "./pages/secretaria/GestaoProfessoresSecretaria";
 import GestaoResponsaveis from "./pages/secretaria/GestaoResponsaveis";
 import GestaoAlunosSecretaria from "./pages/secretaria/GestaoAlunosSecretaria";
+import NovoAlunoSecretaria from "./pages/secretaria/NovoAlunoSecretaria";
 import JustificativasGlobais from "./pages/secretaria/JustificativasGlobais";
 import DetalheTurmaSecretaria from "./pages/secretaria/DetalheTurmaSecretaria";
 import TurmasSerieSecretaria from "./pages/secretaria/TurmasSerieSecretaria";
