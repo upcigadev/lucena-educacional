@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Ideal para o Electron local
+  url      = "file:./lucena-db.sqlite"
+}
+
+// ==========================================
+// 1. CONTROLE DE ACESSO E AUTENTICAÇÃO
+// ==========================================
+
+model Usuario {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  senhaHash String
+  nome      String
+  cpf       String   @unique
+  papel     String   // "SECRETARIA", "DIRETOR", "PROFESSOR", "RESPONSAVEL"
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  // Relacionamentos de Perfil (1 para 1)
+  diretor     Diretor?
+  professor   Professor?
+  responsavel Responsavel?
+}
+
+// ==========================================
+// 2. INFRAESTRUTURA FÍSICA E GESTÃO
+// ==========================================
+
+model Escola {
+  id        String   @id @default(uuid())
+  nome      String
+  inep      String?  @unique
+  endereco  String?
+  telefone  String?
+  createdAt DateTime @default(now())
+
+  diretor   Diretor?
+  series    Serie[]
+  turmas    Turma[]
+}
+
+model Diretor {
+  id        String   @id @default(uuid())
+  usuarioId String   @unique
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  escolaId  String   @unique
+  escola    Escola   @relation(fields: [escolaId], references: [id])
+}
+
+model Professor {
+  id        String   @id @default(uuid())
+  usuarioId String   @unique
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  turmas    TurmaProfessor[] // Um professor pode ter várias turmas
+}
+
+model Responsavel {
+  id        String   @id @default(uuid())
+  usuarioId String   @unique
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  telefone  String
+  
+  alunos    Aluno[]
+}
+
+// ==========================================
+// 3. ESTRUTURA ACADÊMICA E REGRAS DE TEMPO
+// ==========================================
+
+model Serie {
+  id                 String   @id @default(uuid())
+  nome               String   // Ex: "1º Ano Fundamental"
+  escolaId           String
+  escola             Escola   @relation(fields: [escolaId], references: [id])
+  
+  // Regras de Horário e Biometria
+  horarioInicio      String   // Formato "HH:mm" (ex: "07:00")
+  toleranciaMinutos  Int      // ex: 15
+  limiteEntrada      String   // Formato "HH:mm" (ex: "07:30")
+  aplicarTodasTurmas Boolean  @default(true)
+  
+  turmas             Turma[]
+}
+
+model Turma {
+  id                 String   @id @default(uuid())
+  nome               String   // Ex: "Turma A - Matutino"
+  escolaId           String
+  escola             Escola   @relation(fields: [escolaId], references: [id])
+  serieId            String
+  serie              Serie    @relation(fields: [serieId], references: [id])
+
+  // Sobrescrita de Regras de Horário
+  sobrescreverRegras Boolean  @default(false)
+  horarioInicio      String?  
+  toleranciaMinutos  Int?     
+  limiteEntrada      String?  
+
+  alunos             Aluno[]
+  professores        TurmaProfessor[]
+}
+
+// Tabela pivô para relação N:M entre Professor e Turma
+model TurmaProfessor {
+  professorId String
+  turmaId     String
+  professor   Professor @relation(fields: [professorId], references: [id])
+  turma       Turma     @relation(fields: [turmaId], references: [id])
+
+  @@id([professorId, turmaId])
+}
+
+// ==========================================
+// 4. ALUNOS E HARDWARE (IDFACE)
+// ==========================================
+
+model Aluno {
+  id                  String       @id @default(uuid())
+  nomeCompleto        String
+  matricula           String       @unique
+  dataNascimento      DateTime
+  
+  // Integração Control iD (iDFace)
+  biometriaCadastrada Boolean      @default(false)
+  idEquipamento       Int?         @unique // ID gerado para a catraca/leitor facial
+  fotoPerfilBase64    String?      // Apenas para exibição visual no front-end
+
+  responsavelId       String
+  responsavel         Responsavel  @relation(fields: [responsavelId], references: [id])
+  turmaId             String
+  turma               Turma        @relation(fields: [turmaId], references: [id])
+
+  frequencias         Frequencia[]
+  createdAt           DateTime     @default(now())
+}
+
+// ==========================================
+// 5. EVENTOS E JUSTIFICATIVAS
+// ==========================================
+
+model Frequencia {
+  id            String   @id @default(uuid())
+  alunoId       String
+  aluno         Aluno    @relation(fields: [alunoId], references: [id])
+  dataHora      DateTime @default(now())
+  
+  status        String   // "PRESENTE", "ATRASADO", "BLOQUEADO", "FALTA"
+  metodo        String   // "FACIAL" (via iDFace), "MANUAL" (lançada pelo prof)
+  
+  justificativa Justificativa? // Ligação 1:1 caso o aluno falte/atrase e o pai justifique
+}
+
+model Justificativa {
+  id            String     @id @default(uuid())
+  frequenciaId  String     @unique
+  frequencia    Frequencia @relation(fields: [frequenciaId], references: [id])
+  
+  motivo        String
+  anexoUrl      String?    // Link/Caminho para atestado médico
+  status        String     // "PENDENTE", "APROVADA", "REJEITADA"
+  dataEnvio     DateTime   @default(now())
+  
+  analisadaPor  String?    // ID do Diretor que aprovou/rejeitou
+}
