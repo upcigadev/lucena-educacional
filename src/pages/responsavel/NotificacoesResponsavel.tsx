@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { notificacoes } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 
 export default function NotificacoesResponsavel() {
-  const notifs = notificacoes.responsavel;
+  const notifs: any[] = [];
   const [lidas, setLidas] = useState<string[]>(notifs.filter(n => n.lida).map(n => n.id));
 
   const marcarLida = (id: string) => {

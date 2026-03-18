@@ -1,24 +1,39 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
-import { turmas, getAlunosByTurma, getProfessoresByTurma, gerarFrequencia } from '@/data/mockData';
+import { useState, useEffect } from 'react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ArrowLeft } from 'lucide-react';
 
 export default function DetalheTurmaSecretaria() {
   const { turmaId, escolaId } = useParams();
-  const turma = turmas.find(t => t.id === turmaId);
-  const alunosTurma = getAlunosByTurma(turmaId || '');
-  const profs = getProfessoresByTurma(turmaId || '');
-  const [dataSel, setDataSel] = useState('2026-03-07');
+  const [dataSel, setDataSel] = useState(new Date().toISOString().split('T')[0]);
 
-  if (!turma) return <div>Turma não encontrada</div>;
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [alunos, setAlunos] = useState<any[]>([]);
+  const [professores, setProfessores] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.turma?.listar?.() || Promise.resolve([]),
+      window.api?.aluno?.listar?.() || Promise.resolve([]),
+      window.api?.professor?.listar?.() || Promise.resolve([])
+    ]).then(([t, a, p]) => {
+      setTurmas(t); setAlunos(a); setProfessores(p);
+    });
+  }, []);
+
+  const turma = turmas.find(t => t.id === turmaId);
+  const alunosTurma = alunos.filter(a => a.turmaId === turmaId);
+  const profs = professores.filter(p => p.turmas?.some((tp: any) => tp.turmaId === turmaId));
+
+  if (!turma) return <div>Carregando Turma...</div>;
 
   const dadosAlunos = alunosTurma.map(a => {
-    const freq = gerarFrequencia(a.id, a.frequenciaEntrada, a.frequenciaTurma);
+    // Localiza a frequência da data selecionada
+    const entrada = (a.frequencias || []).find((f: any) => f.dataHora && f.dataHora.startsWith(dataSel));
     return {
       aluno: a,
-      entrada: freq.entrada.find(r => r.data === dataSel),
-      turma: freq.turma.find(r => r.data === dataSel),
+      entrada: entrada || { status: 'FALTA' },
+      turma: entrada || { status: 'FALTA' },
     };
   });
 
@@ -28,7 +43,7 @@ export default function DetalheTurmaSecretaria() {
         <ArrowLeft className="w-4 h-4" /> Voltar
       </Link>
       <h1 className="text-2xl font-bold text-foreground mb-2">{turma.nome}</h1>
-      <p className="text-muted-foreground mb-6">{turma.sala} — Frequência: {turma.frequenciaMedia}%</p>
+      <p className="text-muted-foreground mb-6">{turma.sala}</p>
 
       <h2 className="text-lg font-semibold mb-3">Professores Vinculados</h2>
       <div className="bg-card rounded-lg border overflow-hidden mb-6">
@@ -40,8 +55,8 @@ export default function DetalheTurmaSecretaria() {
           <tbody>
             {profs.map(p => (
               <tr key={p.id} className="border-b">
-                <td className="p-3 text-sm font-medium">{p.nome}</td>
-                <td className="p-3 text-sm">{p.disciplinas.join(', ')}</td>
+                <td className="p-3 text-sm font-medium">{p.usuario?.nome}</td>
+                <td className="p-3 text-sm">Geral</td>
               </tr>
             ))}
           </tbody>
@@ -54,10 +69,10 @@ export default function DetalheTurmaSecretaria() {
         <input type="date" value={dataSel} onChange={e => setDataSel(e.target.value)} className="px-3 py-1.5 border rounded-md bg-background text-sm" />
       </div>
 
-      {['Entrada na Escola'/*, 'Frequência por Turma'*/].map((titulo, idx) => {
+      {['Entrada na Escola'].map((titulo, idx) => {
         const key = idx === 0 ? 'entrada' : 'turma';
-        const presentes = dadosAlunos.filter(d => d[key as 'entrada' | 'turma']?.status === 'presente');
-        const ausentes = dadosAlunos.filter(d => d[key as 'entrada' | 'turma']?.status !== 'presente');
+        const presentes = dadosAlunos.filter(d => d[key as 'entrada' | 'turma']?.status === 'PRESENTE' || d[key as 'entrada' | 'turma']?.status === 'ATRASADO');
+        const ausentes = dadosAlunos.filter(d => d[key as 'entrada' | 'turma']?.status !== 'PRESENTE' && d[key as 'entrada' | 'turma']?.status !== 'ATRASADO');
         return (
           <div key={titulo} className="mb-6">
             <h3 className="font-medium mb-2">{titulo}</h3>
@@ -66,7 +81,7 @@ export default function DetalheTurmaSecretaria() {
                 <span className="text-sm font-semibold badge-presente px-3 py-1 rounded-full">Presentes ({presentes.length})</span>
                 <div className="space-y-1 mt-2">
                   {presentes.map(d => (
-                    <div key={d.aluno.id} className="bg-card border rounded p-2 text-sm">{d.aluno.nome}</div>
+                    <div key={d.aluno.id} className="bg-card border rounded p-2 text-sm">{d.aluno.nomeCompleto}</div>
                   ))}
                 </div>
               </div>
@@ -75,8 +90,8 @@ export default function DetalheTurmaSecretaria() {
                 <div className="space-y-1 mt-2">
                   {ausentes.map(d => (
                     <div key={d.aluno.id} className="bg-card border rounded p-2 text-sm flex justify-between">
-                      <span>{d.aluno.nome}</span>
-                      <StatusBadge status={d[key as 'entrada' | 'turma']?.status || 'ausente'} />
+                      <span>{d.aluno.nomeCompleto}</span>
+                      <StatusBadge status={d[key as 'entrada' | 'turma']?.status || 'FALTA'} />
                     </div>
                   ))}
                 </div>

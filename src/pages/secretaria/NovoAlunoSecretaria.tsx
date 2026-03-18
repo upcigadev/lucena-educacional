@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { turmas, series, escolas, responsaveis } from '@/data/mockData';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,17 +30,33 @@ export default function NovoAlunoSecretaria() {
   const [bioCapturando, setBioCapturando] = useState(false);
   const [bioRegistrada, setBioRegistrada] = useState(false);
 
-  const seriesFiltradas = useMemo(() => escolaSel ? series.filter(s => s.escolaId === escolaSel) : [], [escolaSel]);
-  const turmasFiltradas = useMemo(() => serieSel ? turmas.filter(t => t.serieId === serieSel) : [], [serieSel]);
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [series, setSeries] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [responsaveis, setResponsaveis] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.serie?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([]),
+      window.api?.responsavel?.listar?.() || Promise.resolve([])
+    ]).then(([e, s, t, r]) => {
+      setEscolas(e); setSeries(s); setTurmas(t); setResponsaveis(r);
+    });
+  }, []);
+
+  const seriesFiltradas = useMemo(() => escolaSel ? series.filter((s: any) => s.escolaId === escolaSel) : [], [escolaSel, series]);
+  const turmasFiltradas = useMemo(() => serieSel ? turmas.filter((t: any) => t.serieId === serieSel) : [], [serieSel, turmas]);
 
   const resultadosBusca = useMemo(() => {
     if (!buscaResp.trim()) return [];
     const termo = buscaResp.toLowerCase();
-    return responsaveis.filter(r =>
+    return responsaveis.filter((r: any) =>
       !responsaveisVinculados.includes(r.id) &&
-      (r.nome.toLowerCase().includes(termo) || r.cpf.includes(termo))
+      ((r.usuario?.nome || '').toLowerCase().includes(termo) || (r.usuario?.cpf || '').includes(termo))
     );
-  }, [buscaResp, responsaveisVinculados]);
+  }, [buscaResp, responsaveisVinculados, responsaveis]);
 
   const vincularResponsavel = (id: string) => {
     setResponsaveisVinculados(prev => [...prev, id]);
@@ -140,7 +155,7 @@ export default function NovoAlunoSecretaria() {
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
                       >
                         <option value="">Selecione a série...</option>
-                        {seriesFiltradas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                        {seriesFiltradas.map((s: any) => <option key={s.id} value={s.id}>{s.nome}</option>)}
                       </select>
                     </div>
                   )}
@@ -155,7 +170,7 @@ export default function NovoAlunoSecretaria() {
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
                       >
                         <option value="">Selecione a turma...</option>
-                        {turmasFiltradas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                        {turmasFiltradas.map((t: any) => <option key={t.id} value={t.id}>{t.nome}</option>)}
                       </select>
                     </div>
                   )}
@@ -178,7 +193,7 @@ export default function NovoAlunoSecretaria() {
                     </div>
                     {resultadosBusca.length > 0 && (
                       <div className="border rounded-md mt-1 max-h-40 overflow-y-auto bg-background shadow-sm">
-                        {resultadosBusca.map(r => (
+                        {resultadosBusca.map((r: any) => (
                           <button
                             key={r.id}
                             type="button"
@@ -186,8 +201,8 @@ export default function NovoAlunoSecretaria() {
                             className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-accent text-left"
                           >
                             <div>
-                              <span className="font-medium">{r.nome}</span>
-                              <span className="text-muted-foreground ml-2">{r.cpf}</span>
+                              <span className="font-medium">{r.usuario?.nome}</span>
+                              <span className="text-muted-foreground ml-2">{r.usuario?.cpf}</span>
                             </div>
                             <Plus className="w-4 h-4 text-primary" />
                           </button>
@@ -210,15 +225,15 @@ export default function NovoAlunoSecretaria() {
                   ) : (
                     <div className="space-y-2">
                       {responsaveisVinculados.map(id => {
-                        const resp = responsaveis.find(r => r.id === id) || novosResps.find(r => r.id === id);
+                        const resp = responsaveis.find(r => r.id === id) || novosResps.find(n => n.id === id);
                         if (!resp) return null;
+                        const nomeResp = resp.usuario?.nome || resp.nome;
+                        const cpfResp = resp.usuario?.cpf || resp.cpf;
                         return (
                           <div key={id} className="flex items-center justify-between border rounded-md px-3 py-2 bg-muted/30">
                             <div>
-                              <span className="text-sm font-medium">{resp.nome}</span>
-                              <span className="text-xs text-muted-foreground ml-2">{resp.cpf}</span>
-                              <span className="text-xs text-muted-foreground ml-2">({resp.parentesco})</span>
-                              {'whatsapp' in resp && <span className="text-xs text-muted-foreground ml-2">{resp.whatsapp}</span>}
+                              <span className="text-sm font-medium">{nomeResp}</span>
+                              <span className="text-xs text-muted-foreground ml-2">{cpfResp}</span>
                             </div>
                             <button type="button" onClick={() => desvincularResponsavel(id)} className="text-destructive hover:opacity-70">
                               <X className="w-4 h-4" />

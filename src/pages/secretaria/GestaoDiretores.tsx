@@ -1,16 +1,26 @@
-import { useState } from 'react';
-import { diretores as diretoresData, escolas } from '@/data/mockData';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { formatCpf, validateCpf } from '@/lib/masks';
 import { X } from 'lucide-react';
 
 export default function GestaoDiretores() {
-  const [lista, setLista] = useState(diretoresData);
+  const [lista, setLista] = useState<any[]>([]);
+  const [escolas, setEscolas] = useState<any[]>([]);
+
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
   const [escolasSel, setEscolasSel] = useState<string[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.diretor?.listar?.() || Promise.resolve([]),
+      window.api?.escola?.listar?.() || Promise.resolve([])
+    ]).then(([d, e]) => {
+      setLista(d); setEscolas(e);
+    });
+  }, []);
 
   const resetForm = () => {
     setNome(''); setCpf(''); setEscolasSel([]);
@@ -20,14 +30,15 @@ export default function GestaoDiretores() {
   const openEdit = (id: string) => {
     const d = lista.find(x => x.id === id);
     if (!d) return;
-    setNome(d.nome);
-    setCpf(d.cpf);
-    setEscolasSel([...d.escolaIds]);
+    setNome(d.usuario?.nome || '');
+    setCpf(d.usuario?.cpf || '');
+    setEscolasSel(d.escolaId ? [d.escolaId] : []);
     setEditId(id);
     setShowForm(true);
   };
 
   const toggleEscola = (id: string) => {
+    // Para simplificar, diretor pode ter uma escola (ou adaptado para múltiplas)
     setEscolasSel(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
   };
 
@@ -36,14 +47,7 @@ export default function GestaoDiretores() {
     if (!validateCpf(cpf)) { toast.error('CPF inválido. Verifique os dígitos.'); return; }
     if (escolasSel.length === 0) { toast.error('Selecione ao menos uma escola.'); return; }
 
-    if (editId) {
-      setLista(prev => prev.map(d => d.id === editId ? { ...d, nome, cpf, escolaIds: escolasSel } : d));
-      toast.success('Diretor atualizado!');
-    } else {
-      const novo = { id: `d${Date.now()}`, nome, cpf, escolaIds: escolasSel };
-      setLista(prev => [...prev, novo]);
-      toast.success('Diretor cadastrado!');
-    }
+    toast.info('Cadastro de diretor será persistido via Main IPC.');
     resetForm();
   };
 
@@ -72,7 +76,7 @@ export default function GestaoDiretores() {
             <div>
               <label className="block text-sm font-medium mb-1">Escola(s) vinculada(s)</label>
               <div className="space-y-2 border rounded-md p-3 bg-background max-h-40 overflow-y-auto">
-                {escolas.map(e => (
+                {escolas.map((e: any) => (
                   <label key={e.id} className="flex items-center gap-2 text-sm cursor-pointer">
                     <input type="checkbox" checked={escolasSel.includes(e.id)} onChange={() => toggleEscola(e.id)} className="rounded border-input" />
                     <span>{e.nome}</span>
@@ -97,12 +101,12 @@ export default function GestaoDiretores() {
           </tr></thead>
           <tbody>
             {lista.map(d => {
-              const escolasDir = escolas.filter(e => d.escolaIds.includes(e.id));
+              const escolaNome = d.escola?.nome || '';
               return (
                 <tr key={d.id} className="border-b">
-                  <td className="p-3 text-sm font-medium">{d.nome}</td>
-                  <td className="p-3 text-sm">{d.cpf}</td>
-                  <td className="p-3 text-sm">{escolasDir.map(e => e.nome).join(', ')}</td>
+                  <td className="p-3 text-sm font-medium">{d.usuario?.nome}</td>
+                  <td className="p-3 text-sm">{d.usuario?.cpf}</td>
+                  <td className="p-3 text-sm">{escolaNome}</td>
                   <td className="p-3">
                     <button onClick={() => openEdit(d.id)} className="text-xs bg-secondary text-secondary-foreground px-3 py-1 rounded">Editar</button>
                   </td>

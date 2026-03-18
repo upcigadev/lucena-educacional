@@ -1,8 +1,23 @@
-import { responsaveis, getDependentes } from '@/data/mockData';
+import { useState, useEffect } from 'react';
 
 export default function MeusDadosResponsavel() {
-  const resp = responsaveis[0]; // Maria da Silva
-  const deps = getDependentes('1');
+  const [responsaveis, setResponsaveis] = useState<any[]>([]);
+  const [alunos, setAlunos] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.responsavel?.listar?.() || Promise.resolve([]),
+      window.api?.aluno?.listar?.() || Promise.resolve([])
+    ]).then(([r, a]) => {
+      setResponsaveis(r); setAlunos(a);
+    });
+  }, []);
+
+  const resp = responsaveis[0];
+  const deps = alunos;
+
+  if (!responsaveis.length) return <div>Carregando...</div>;
+  if (!resp) return <div>Responsável não encontrado</div>;
 
   return (
     <div>
@@ -11,19 +26,15 @@ export default function MeusDadosResponsavel() {
         <div className="space-y-4">
           <div>
             <label className="text-sm text-muted-foreground">Nome</label>
-            <p className="font-medium">{resp.nome}</p>
+            <p className="font-medium">{resp.usuario?.nome}</p>
           </div>
           <div>
             <label className="text-sm text-muted-foreground">CPF</label>
-            <p className="font-medium">{resp.cpf}</p>
+            <p className="font-medium">{resp.usuario?.cpf}</p>
           </div>
           <div>
             <label className="text-sm text-muted-foreground">WhatsApp</label>
-            <p className="font-medium">{resp.whatsapp}</p>
-          </div>
-          <div>
-            <label className="text-sm text-muted-foreground">Parentesco</label>
-            <p className="font-medium">{resp.parentesco}</p>
+            <p className="font-medium">{resp.telefone || '--'}</p>
           </div>
         </div>
       </div>
@@ -41,9 +52,9 @@ export default function MeusDadosResponsavel() {
           <tbody>
             {deps.map(d => (
               <tr key={d.id} className="border-b">
-                <td className="p-3 text-sm font-medium">{d.nome}</td>
-                <td className="p-3 text-sm">{d.escolaNome}</td>
-                <td className="p-3 text-sm">{d.turmaName}</td>
+                <td className="p-3 text-sm font-medium">{d.nomeCompleto}</td>
+                <td className="p-3 text-sm">{d.turma?.escola?.nome}</td>
+                <td className="p-3 text-sm">{d.turma?.nome}</td>
               </tr>
             ))}
           </tbody>

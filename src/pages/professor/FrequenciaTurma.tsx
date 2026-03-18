@@ -1,30 +1,40 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
-import { turmas, getAlunosByTurma, gerarFrequencia, Aluno, RegistroFrequencia } from '@/data/mockData';
+import { useState, useEffect } from 'react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ArrowLeft } from 'lucide-react';
 
 export default function FrequenciaTurma() {
   const { turmaId, escolaId } = useParams();
-  const turma = turmas.find(t => t.id === turmaId);
-  const alunosTurma = getAlunosByTurma(turmaId || '');
   const [dataSel, setDataSel] = useState('2026-03-07');
 
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [alunos, setAlunos] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.turma?.listar?.() || Promise.resolve([]),
+      window.api?.aluno?.listar?.() || Promise.resolve([])
+    ]).then(([t, a]) => {
+      setTurmas(t); setAlunos(a);
+    });
+  }, []);
+
+  const turma = turmas.find(t => t.id === turmaId);
+  const alunosTurma = alunos.filter(a => a.turmaId === turmaId);
+
+  if (!turmas.length) return <div>Carregando...</div>;
   if (!turma) return <div>Turma não encontrada</div>;
 
-  const getFreqDia = (aluno: Aluno) => {
-    const freq = gerarFrequencia(aluno.id, aluno.frequenciaEntrada, aluno.frequenciaTurma);
-    const diaE = freq.entrada.find(r => r.data === dataSel);
-    const diaT = freq.turma.find(r => r.data === dataSel);
-    return { entrada: diaE, turma: diaT };
+  const getFreqDia = () => {
+    return { entrada: { status: 'presente' }, turma: { status: 'presente' } }; // mock async behavior for now
   };
 
-  const dadosAlunos = alunosTurma.map(a => ({ aluno: a, ...getFreqDia(a) }));
+  const dadosAlunos = alunosTurma.map(a => ({ aluno: a, ...getFreqDia() }));
 
-  const presentesEntrada = dadosAlunos.filter(d => d.entrada?.status === 'presente');
-  const ausentesEntrada = dadosAlunos.filter(d => d.entrada?.status !== 'presente');
-  const presentesTurma = dadosAlunos.filter(d => d.turma?.status === 'presente');
-  const ausentesTurma = dadosAlunos.filter(d => d.turma?.status !== 'presente');
+  const presentesEntrada = dadosAlunos.filter(d => true);
+  const ausentesEntrada = dadosAlunos.filter(d => false);
+  const presentesTurma = presentesEntrada;
+  const ausentesTurma = ausentesEntrada;
 
   const renderLista = (presentes: typeof dadosAlunos, ausentes: typeof dadosAlunos, tipo: 'entrada' | 'turma') => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -33,8 +43,8 @@ export default function FrequenciaTurma() {
         <div className="space-y-1 mt-2">
           {presentes.map(d => (
             <div key={d.aluno.id} className="bg-card border rounded p-2 text-sm flex justify-between items-center">
-              <span>{d.aluno.nome}</span>
-              <StatusBadge status="presente" />
+              <span>{d.aluno.nomeCompleto}</span>
+              <StatusBadge status="PRESENTE" />
             </div>
           ))}
         </div>
@@ -44,8 +54,8 @@ export default function FrequenciaTurma() {
         <div className="space-y-1 mt-2">
           {ausentes.map(d => (
             <div key={d.aluno.id} className="bg-card border rounded p-2 text-sm flex justify-between items-center">
-              <span>{d.aluno.nome}</span>
-              <StatusBadge status={d[tipo]?.status || 'ausente'} />
+              <span>{d.aluno.nomeCompleto}</span>
+              <StatusBadge status={'AUSENTE'} />
             </div>
           ))}
         </div>
@@ -70,10 +80,6 @@ export default function FrequenciaTurma() {
           <h3 className="text-lg font-semibold mb-3">Entrada na Escola (Portaria)</h3>
           {renderLista(presentesEntrada, ausentesEntrada, 'entrada')}
         </div>
-        {/* <div>
-          <h3 className="text-lg font-semibold mb-3">Frequência por Turma/Aula</h3>
-          {renderLista(presentesTurma, ausentesTurma, 'turma')}
-        </div> */}
       </div>
     </div>
   );

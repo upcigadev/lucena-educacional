@@ -1,8 +1,12 @@
-import { getJustificativasByResponsavel, alunos } from '@/data/mockData';
+import { useState, useEffect } from 'react';
 import { StatusBadge } from '@/components/StatusBadge';
 
 export default function JustificativasResponsavel() {
-  const justificativas = getJustificativasByResponsavel('1');
+  const [justificativas, setJustificativas] = useState<any[]>([]);
+
+  useEffect(() => {
+    window.api?.justificativa?.listar?.()?.then(setJustificativas).catch(console.error);
+  }, []);
 
   return (
     <div>
@@ -20,9 +24,9 @@ export default function JustificativasResponsavel() {
           <tbody>
             {justificativas.map(j => (
               <tr key={j.id} className="border-b">
-                <td className="p-3 text-sm font-medium">{j.alunoNome}</td>
-                <td className="p-3 text-sm">{j.periodoInicio} a {j.periodoFim}</td>
-                <td className="p-3 text-sm">{j.dataEnvio}</td>
+                <td className="p-3 text-sm font-medium">{j.frequencia?.aluno?.nomeCompleto}</td>
+                <td className="p-3 text-sm">--</td>
+                <td className="p-3 text-sm">{new Date(j.createdAt).toLocaleDateString()}</td>
                 <td className="p-3"><StatusBadge status={j.status} /></td>
               </tr>
             ))}

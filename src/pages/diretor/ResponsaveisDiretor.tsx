@@ -1,5 +1,4 @@
-import { useState, useMemo } from 'react';
-import { responsaveis, getDependentes, alunos, escolas, series, turmas } from '@/data/mockData';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 
 export default function ResponsaveisDiretor() {
@@ -11,34 +10,34 @@ export default function ResponsaveisDiretor() {
   const [aviso, setAviso] = useState('');
   const [responsavelSelecionado, setResponsavelSelecionado] = useState<string>('');
 
-  const escolaIds = ['1', '2'];
-  const escolasDiretor = escolas.filter(e => escolaIds.includes(e.id));
+  const [responsaveis, setResponsaveis] = useState<any[]>([]);
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [series, setSeries] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
 
-  const seriesFiltradas = useMemo(() => filtroEscola ? series.filter(s => s.escolaId === filtroEscola) : [], [filtroEscola]);
-  const turmasFiltradas = useMemo(() => filtroSerie ? turmas.filter(t => t.serieId === filtroSerie) : [], [filtroSerie]);
+  useEffect(() => {
+    Promise.all([
+      window.api?.responsavel?.listar?.() || Promise.resolve([]),
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.serie?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([])
+    ]).then(([r, e, s, t]) => {
+      setResponsaveis(r); setEscolas(e); setSeries(s); setTurmas(t);
+    });
+  }, []);
+
+  const escolasDiretor = escolas; // Simulando escola vinculada
+
+  const seriesFiltradas = useMemo(() => filtroEscola ? series.filter(s => s.escolaId === filtroEscola) : [], [filtroEscola, series]);
+  const turmasFiltradas = useMemo(() => filtroSerie ? turmas.filter(t => t.serieId === filtroSerie) : [], [filtroSerie, turmas]);
 
   const filtered = useMemo(() => {
-    const alunosEscola = alunos.filter(a => escolaIds.includes(a.escolaId));
-    const responsaveisIds = [...new Set(alunosEscola.flatMap(a => a.responsavelIds))];
-    const responsaveisEscola = responsaveis.filter(r => responsaveisIds.includes(r.id));
-
-    return responsaveisEscola.filter(r => {
-      if (filtroNome && !r.nome.toLowerCase().includes(filtroNome.toLowerCase())) return false;
-      if (filtroEscola) {
-        const deps = getDependentes(r.id);
-        let depsFiltered = deps.filter(d => d.escolaId === filtroEscola);
-        if (filtroSerie) {
-          const turmasDaSerie = turmas.filter(t => t.serieId === filtroSerie).map(t => t.id);
-          depsFiltered = depsFiltered.filter(d => turmasDaSerie.includes(d.turmaId));
-        }
-        if (filtroTurma) {
-          depsFiltered = depsFiltered.filter(d => d.turmaId === filtroTurma);
-        }
-        if (depsFiltered.length === 0) return false;
-      }
+    return responsaveis.filter(r => {
+      const nomeR = r.usuario?.nome || 'Desconhecido';
+      if (filtroNome && !nomeR.toLowerCase().includes(filtroNome.toLowerCase())) return false;
       return true;
     });
-  }, [filtroNome, filtroEscola, filtroSerie, filtroTurma]);
+  }, [filtroNome, filtroEscola, filtroSerie, filtroTurma, responsaveis]);
 
   const handleEnviar = () => {
     toast.success('Aviso enviado ao responsável com sucesso!');
@@ -86,15 +85,16 @@ export default function ResponsaveisDiretor() {
           </tr></thead>
           <tbody>
             {filtered.map(r => {
-              const deps = getDependentes(r.id).filter(d => escolaIds.includes(d.escolaId));
+              const deps = r.alunos || [];
+              const nomeR = r.usuario?.nome || 'Desconhecido';
               return (
                 <tr key={r.id} className="border-b">
-                  <td className="p-3 text-sm font-medium">{r.nome}</td>
-                  <td className="p-3 text-sm">{r.cpf}</td>
-                  <td className="p-3 text-sm">{r.whatsapp}</td>
-                  <td className="p-3 text-sm">{deps.map(d => d.nome).join(', ')}</td>
+                  <td className="p-3 text-sm font-medium">{nomeR}</td>
+                  <td className="p-3 text-sm">{r.usuario?.cpf || 'ND'}</td>
+                  <td className="p-3 text-sm">{r.telefone || 'ND'}</td>
+                  <td className="p-3 text-sm">{deps.map((d: any) => d.nomeCompleto).join(', ')}</td>
                   <td className="p-3">
-                    <button onClick={() => { setResponsavelSelecionado(r.nome); setModalOpen(true); }} className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">Notificar</button>
+                    <button onClick={() => { setResponsavelSelecionado(nomeR); setModalOpen(true); }} className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">Notificar</button>
                   </td>
                 </tr>
               );

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { PerfilUsuario } from '@/data/mockData';
+import { useAuth, PerfilUsuario } from '@/contexts/AuthContext';
 import { School } from 'lucide-react';
 import logo from '@/assets/logo-educacional.png';
 import { formatCpf } from '@/lib/masks';
@@ -86,8 +85,8 @@ export default function Login() {
             </div>
 
             <button
-              type="submit"
-              className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:opacity-90 transition-opacity"
+               type="submit"
+               className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:opacity-90 transition-opacity"
             >
               Entrar
             </button>

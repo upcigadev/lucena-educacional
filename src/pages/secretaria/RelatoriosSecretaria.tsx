@@ -1,5 +1,4 @@
-import { useMemo, useRef } from 'react';
-import { escolas, alunos, turmas, series, professores, justificativas, gerarFrequencia } from '@/data/mockData';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { ReportFilters, useDefaultFilters } from '@/components/ReportFilters';
 import { exportarPdf } from '@/lib/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +25,31 @@ export default function RelatoriosSecretaria() {
   const chartRankingRef = useRef<HTMLDivElement>(null);
   const chartFaltasRef = useRef<HTMLDivElement>(null);
 
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [alunos, setAlunos] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [series, setSeries] = useState<any[]>([]);
+  const [professores, setProfessores] = useState<any[]>([]);
+  const [justificativas, setJustificativas] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.aluno?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([]),
+      window.api?.serie?.listar?.() || Promise.resolve([]),
+      window.api?.professor?.listar?.() || Promise.resolve([]),
+      window.api?.justificativa?.listar?.() || Promise.resolve([])
+    ]).then(([e, a, t, s, p, j]) => {
+      setEscolas(e);
+      setAlunos(a);
+      setTurmas(t);
+      setSeries(s);
+      setProfessores(p || []);
+      setJustificativas(j || []);
+    });
+  }, []);
+
   const alunosFiltrados = useMemo(() => {
     let lista = [...alunos];
     if (filters.escolaId) lista = lista.filter(a => a.escolaId === filters.escolaId);
@@ -45,45 +69,68 @@ export default function RelatoriosSecretaria() {
 
   const rankingEscolas = useMemo(() => {
     return escolas.map(e => {
-      const alunosEsc = alunos.filter(a => a.escolaId === e.id);
-      const media = alunosEsc.length > 0 ? Math.round(alunosEsc.reduce((s, a) => s + a.frequenciaEntrada, 0) / alunosEsc.length) : 0;
+      const alunosEsc = alunos.filter(a => a.escolaId === e.id || a.turma?.escolaId === e.id);
+      
+      const freqPorAluno = alunosEsc.map(a => {
+        const totalReq = a.frequencias?.length || 1; 
+        const presencas = a.frequencias?.filter((f: any) => f.status === 'PRESENTE' || f.status === 'ATRASADO').length || 0;
+        return (presencas / totalReq) * 100;
+      });
+
+      const media = freqPorAluno.length > 0 ? Math.round(freqPorAluno.reduce((s, val) => s + val, 0) / freqPorAluno.length) : 100;
+
       return { ...e, media, qtdAlunos: alunosEsc.length };
     }).sort((a, b) => b.media - a.media);
-  }, []);
+  }, [escolas, alunos]);
 
-  const alunosBaixaFreq = useMemo(() => alunosFiltrados.filter(a => a.frequenciaEntrada < 75), [alunosFiltrados]);
+  const alunosBaixaFreq = useMemo(() => {
+    return alunosFiltrados.map(a => {
+      const totalReq = a.frequencias?.length || 1; 
+      const presencas = a.frequencias?.filter((f: any) => f.status === 'PRESENTE' || f.status === 'ATRASADO').length || 0;
+      return { ...a, freqValue: Math.round((presencas / totalReq) * 100) };
+    }).filter(a => a.freqValue < 75);
+  }, [alunosFiltrados]);
 
   const faltasPorEscola = useMemo(() => {
     const map = new Map<string, { escola: string; justificadas: number; naoJustificadas: number }>();
     const escolasList = filters.escolaId ? escolas.filter(e => e.id === filters.escolaId) : escolas;
     escolasList.forEach(e => {
-      const alunosEsc = alunos.filter(a => a.escolaId === e.id);
+      const alunosEsc = alunos.filter(a => a.turma?.escolaId === e.id);
       let justificadas = 0, naoJust = 0;
       alunosEsc.forEach(a => {
-        const freq = gerarFrequencia(a.id, a.frequenciaEntrada, a.frequenciaTurma);
-        freq.entrada.forEach(r => {
-          if (r.status === 'justificado') justificadas++;
-          if (r.status === 'ausente') naoJust++;
+        const frequencias = a.frequencias || [];
+        frequencias.forEach((r: any) => {
+          if (r.status === 'FALTA' && r.justificativa?.status === 'APROVADA') justificadas++;
+          if (r.status === 'FALTA' && (!r.justificativa || r.justificativa?.status !== 'APROVADA')) naoJust++;
         });
       });
       map.set(e.id, { escola: e.nome, justificadas, naoJustificadas: naoJust });
     });
     return Array.from(map.values());
-  }, [filters.escolaId]);
+  }, [escolas, alunos, filters.escolaId]);
 
-  const justPendentes = useMemo(() => justFiltradas.filter(j => j.status === 'pendente'), [justFiltradas]);
+  const justPendentes = useMemo(() => justFiltradas.filter(j => j.status === 'PENDENTE'), [justFiltradas]);
 
   const profsPorEscola = useMemo(() => {
     const result: { professor: string; disciplinas: string; escola: string; turmas: string }[] = [];
     const escolasList = filters.escolaId ? escolas.filter(e => e.id === filters.escolaId) : escolas;
+    // Adaptado para o banco de dados (o professor usa tabela pivô TurmaProfessor)
     escolasList.forEach(e => {
-      professores.filter(p => p.escolaIds.includes(e.id)).forEach(p => {
-        const turmasProf = turmas.filter(t => p.turmaIds.includes(t.id) && t.escolaId === e.id);
-        result.push({ professor: p.nome, disciplinas: p.disciplinas.join(', '), escola: e.nome, turmas: turmasProf.map(t => t.nome).join(', ') });
+      professores.forEach(p => {
+        const professorTurmas = p.turmas || [];
+        const turmasNaEscola = professorTurmas.filter((tp: any) => tp.turma?.escolaId === e.id);
+        if (turmasNaEscola.length > 0) {
+           result.push({ 
+             professor: p.usuario?.nome || 'Desconhecido', 
+             disciplinas: 'Geral', 
+             escola: e.nome, 
+             turmas: turmasNaEscola.map((tp: any) => tp.turma?.nome).join(', ') 
+           });
+        }
       });
     });
     return result;
-  }, [filters.escolaId]);
+  }, [escolas, professores, filters.escolaId]);
 
   const periodo = getPeriodoLabel(filters);
 

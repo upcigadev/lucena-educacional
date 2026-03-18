@@ -1,7 +1,11 @@
-import { professores, turmas, escolas } from '@/data/mockData';
+import { useState, useEffect } from 'react';
 
 export default function ProfessoresDiretor() {
-  const profsEscola = professores.filter(p => p.escolaIds.includes('1'));
+  const [professores, setProfessores] = useState<any[]>([]);
+
+  useEffect(() => {
+    window.api?.professor?.listar?.()?.then(setProfessores).catch(console.error);
+  }, []);
 
   return (
     <div>
@@ -11,18 +15,16 @@ export default function ProfessoresDiretor() {
           <thead><tr className="border-b bg-secondary">
             <th className="text-left p-3 text-sm font-medium">Nome</th>
             <th className="text-left p-3 text-sm font-medium">CPF</th>
-            <th className="text-left p-3 text-sm font-medium">Disciplinas</th>
             <th className="text-left p-3 text-sm font-medium">Turmas</th>
           </tr></thead>
           <tbody>
-            {profsEscola.map(p => {
-              const turmasProf = turmas.filter(t => p.turmaIds.includes(t.id) && t.escolaId === '1');
+            {professores.map(p => {
+              const turmasProf = p.turmas || [];
               return (
                 <tr key={p.id} className="border-b">
-                  <td className="p-3 text-sm font-medium">{p.nome}</td>
-                  <td className="p-3 text-sm">{p.cpf}</td>
-                  <td className="p-3 text-sm">{p.disciplinas.join(', ')}</td>
-                  <td className="p-3 text-sm">{turmasProf.map(t => t.nome).join(', ')}</td>
+                  <td className="p-3 text-sm font-medium">{p.usuario?.nome}</td>
+                  <td className="p-3 text-sm">{p.usuario?.cpf}</td>
+                  <td className="p-3 text-sm">{turmasProf.map((t: any) => t.turma?.nome).join(', ')}</td>
                 </tr>
               );
             })}

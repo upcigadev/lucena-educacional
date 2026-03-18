@@ -1,21 +1,25 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getAlunosByEscola } from '@/data/mockData';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const POR_PAGINA = 10;
 
 export default function GestaoAlunosDiretor() {
   const navigate = useNavigate();
-  const alunosEscola = getAlunosByEscola('1');
   const [filtroNome, setFiltroNome] = useState('');
   const [filtroSerie, setFiltroSerie] = useState('');
   const [pagina, setPagina] = useState(1);
 
-  const seriesUnicas = [...new Set(alunosEscola.map(a => a.serieName))];
-  const filtered = alunosEscola.filter(a => {
-    if (filtroNome && !a.nome.toLowerCase().includes(filtroNome.toLowerCase())) return false;
-    if (filtroSerie && a.serieName !== filtroSerie) return false;
+  const [alunosEscola, setAlunosEscola] = useState<any[]>([]);
+
+  useEffect(() => {
+    window.api?.aluno?.listar?.()?.then((res) => setAlunosEscola(res)).catch(console.error);
+  }, []);
+
+  const seriesUnicas = [...new Set(alunosEscola.map((a: any) => a.turma?.serie?.nome).filter(Boolean))];
+  const filtered = alunosEscola.filter((a: any) => {
+    if (filtroNome && !a.nomeCompleto?.toLowerCase().includes(filtroNome.toLowerCase())) return false;
+    if (filtroSerie && a.turma?.serie?.nome !== filtroSerie) return false;
     return true;
   });
 
@@ -23,7 +27,6 @@ export default function GestaoAlunosDiretor() {
   const paginaAtual = Math.min(pagina, totalPaginas);
   const paginados = filtered.slice((paginaAtual - 1) * POR_PAGINA, paginaAtual * POR_PAGINA);
 
-  // Reset page on filter change
   const handleFiltroNome = (v: string) => { setFiltroNome(v); setPagina(1); };
   const handleFiltroSerie = (v: string) => { setFiltroSerie(v); setPagina(1); };
 
@@ -41,7 +44,7 @@ export default function GestaoAlunosDiretor() {
           className="px-3 py-2 border rounded-md bg-background text-sm w-64" />
         <select value={filtroSerie} onChange={e => handleFiltroSerie(e.target.value)} className="px-3 py-2 border rounded-md bg-background text-sm">
           <option value="">Todas as séries</option>
-          {seriesUnicas.map(s => <option key={s} value={s}>{s}</option>)}
+          {seriesUnicas.map(s => <option key={s as string} value={s as string}>{s as string}</option>)}
         </select>
       </div>
 
@@ -56,15 +59,15 @@ export default function GestaoAlunosDiretor() {
             <th className="text-left p-3 text-sm font-medium">Freq.</th>
           </tr></thead>
           <tbody>
-            {paginados.map(a => (
+            {paginados.map((a: any) => (
               <tr key={a.id} className="border-b hover:bg-secondary/30 cursor-pointer transition-colors" onClick={() => navigate(`/diretor/aluno/${a.id}`)}>
-                <td className="p-3 text-sm font-medium text-primary hover:underline">{a.nome}</td>
+                <td className="p-3 text-sm font-medium text-primary hover:underline">{a.nomeCompleto}</td>
                 <td className="p-3 text-sm">{a.cpf}</td>
                 <td className="p-3 text-sm">{a.matricula}</td>
-                <td className="p-3 text-sm">{a.serieName}</td>
-                <td className="p-3 text-sm">{a.turmaName}</td>
+                <td className="p-3 text-sm">{a.turma?.serie?.nome}</td>
+                <td className="p-3 text-sm">{a.turma?.nome}</td>
                 <td className="p-3 text-sm">
-                  <span className={a.frequenciaEntrada < 75 ? 'text-destructive font-bold' : 'text-primary font-bold'}>{a.frequenciaEntrada}%</span>
+                  <span className="text-primary font-bold">100%</span>
                 </td>
               </tr>
             ))}
@@ -72,7 +75,6 @@ export default function GestaoAlunosDiretor() {
         </table>
       </div>
 
-      {/* Paginação */}
       <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
         <span>{filtered.length} aluno(s) encontrado(s)</span>
         <div className="flex items-center gap-2">

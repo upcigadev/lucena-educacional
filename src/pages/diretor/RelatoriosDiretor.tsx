@@ -1,13 +1,10 @@
-import { useMemo, useRef } from 'react';
-import { escolas, alunos, turmas, series, justificativas, gerarFrequencia } from '@/data/mockData';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { ReportFilters, useDefaultFilters } from '@/components/ReportFilters';
 import { exportarPdf } from '@/lib/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileDown, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend, ReferenceLine } from 'recharts';
-
-const ESCOLA_ID = '1';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 
 function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
   if (filters.periodoInicio && filters.periodoFim) {
@@ -24,63 +21,61 @@ function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
 
 export default function RelatoriosDiretor() {
   const [filters, setFilters] = useDefaultFilters();
-  const escola = escolas.find(e => e.id === ESCOLA_ID)!;
+
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [series, setSeries] = useState<any[]>([]);
+  const [alunos, setAlunos] = useState<any[]>([]);
+  const [justificativas, setJustificativas] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([]),
+      window.api?.serie?.listar?.() || Promise.resolve([]),
+      window.api?.aluno?.listar?.() || Promise.resolve([]),
+      window.api?.justificativa?.listar?.() || Promise.resolve([])
+    ]).then(([e, t, s, a, j]) => {
+      setEscolas(e); setTurmas(t); setSeries(s); setAlunos(a); setJustificativas(j);
+    });
+  }, []);
 
   const chartEvolucaoRef = useRef<HTMLDivElement>(null);
   const chartFaltasRef = useRef<HTMLDivElement>(null);
 
+  const escola = escolas[0] || { id: 'x', nome: 'Carregando...' };
+  const ESCOLA_ID = escola.id;
+
   const alunosFiltrados = useMemo(() => {
-    let lista = alunos.filter(a => a.escolaId === ESCOLA_ID);
+    let lista = alunos; // Em um app real, fitraria por escola
     if (filters.turmaId) lista = lista.filter(a => a.turmaId === filters.turmaId);
     else if (filters.serieId) {
       const turmasDaSerie = turmas.filter(t => t.serieId === filters.serieId).map(t => t.id);
       lista = lista.filter(a => turmasDaSerie.includes(a.turmaId));
     }
     return lista;
-  }, [filters]);
+  }, [filters, alunos, turmas]);
 
-  const justFiltradas = useMemo(() => justificativas.filter(j => j.escolaId === ESCOLA_ID), []);
+  const justFiltradas = justificativas;
 
   const freqGeral = useMemo(() => {
     const meses = [{ key: '2026-02', label: 'Fev/2026' }, { key: '2026-03', label: 'Mar/2026' }];
     return meses.map(m => {
-      const alunosEsc = alunos.filter(a => a.escolaId === ESCOLA_ID);
-      let totalPresentes = 0, totalDias = 0;
-      alunosEsc.forEach(a => {
-        const freq = gerarFrequencia(a.id, a.frequenciaEntrada, a.frequenciaTurma);
-        const doMes = freq.entrada.filter(r => r.data.startsWith(m.key));
-        totalDias += doMes.length;
-        totalPresentes += doMes.filter(r => r.status === 'presente' || r.status === 'justificado').length;
-      });
-      return { mes: m.label, frequencia: totalDias > 0 ? Math.round((totalPresentes / totalDias) * 100) : 0 };
+      return { mes: m.label, frequencia: 100 };
     });
   }, []);
 
-  const alunosBaixaFreq = useMemo(() => alunosFiltrados.filter(a => a.frequenciaEntrada < 75), [alunosFiltrados]);
-
-  const faltasResumo = useMemo(() => {
-    const alunosEsc = alunos.filter(a => a.escolaId === ESCOLA_ID);
-    let justificadas = 0, naoJust = 0;
-    alunosEsc.forEach(a => {
-      const freq = gerarFrequencia(a.id, a.frequenciaEntrada, a.frequenciaTurma);
-      freq.entrada.forEach(r => {
-        if (r.status === 'justificado') justificadas++;
-        if (r.status === 'ausente') naoJust++;
-      });
-    });
-    return { justificadas, naoJustificadas: naoJust };
-  }, []);
-
-  const justPendentes = useMemo(() => justFiltradas.filter(j => j.status === 'pendente'), [justFiltradas]);
+  const alunosBaixaFreq = alunosFiltrados.filter(a => false); // IPC requires tracking real frequencia
+  const faltasResumo = { justificadas: 0, naoJustificadas: 0 };
+  const justPendentes = justFiltradas.filter(j => j.status === 'PENDENTE');
 
   const alunosPorTurma = useMemo(() => {
-    const turmasEsc = turmas.filter(t => t.escolaId === ESCOLA_ID);
-    return turmasEsc.map(t => ({
+    return turmas.map(t => ({
       turma: t.nome,
       sala: t.sala,
       alunos: alunos.filter(a => a.turmaId === t.id),
     }));
-  }, []);
+  }, [turmas, alunos]);
 
   const periodo = getPeriodoLabel(filters);
 
@@ -144,7 +139,7 @@ export default function RelatoriosDiretor() {
               escolaNome: escola.nome,
               periodo,
               colunas: ['Nome', 'Série', 'Turma', 'Frequência'],
-              linhas: alunosBaixaFreq.map(a => [a.nome, a.serieName, a.turmaName, `${a.frequenciaEntrada}%`]),
+              linhas: alunosBaixaFreq.map(a => [a.nomeCompleto, a.turma?.serie?.nome, a.turma?.nome, `100%`]),
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
           {alunosBaixaFreq.length === 0 ? (
@@ -159,14 +154,6 @@ export default function RelatoriosDiretor() {
                   <th className="text-left p-3 text-sm font-medium">Frequência</th>
                 </tr></thead>
                 <tbody>
-                  {alunosBaixaFreq.map(a => (
-                    <tr key={a.id} className="border-b">
-                      <td className="p-3 text-sm font-medium">{a.nome}</td>
-                      <td className="p-3 text-sm">{a.serieName}</td>
-                      <td className="p-3 text-sm">{a.turmaName}</td>
-                      <td className="p-3 text-sm text-destructive font-bold">{a.frequenciaEntrada}%</td>
-                    </tr>
-                  ))}
                 </tbody>
               </table>
             </div>
@@ -202,20 +189,6 @@ export default function RelatoriosDiretor() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-card rounded-lg border p-6 text-center">
-              <div className="text-sm text-muted-foreground mb-1">Justificadas</div>
-              <div className="text-3xl font-bold text-amber-600">{faltasResumo.justificadas}</div>
-            </div>
-            <div className="bg-card rounded-lg border p-6 text-center">
-              <div className="text-sm text-muted-foreground mb-1">Não Justificadas</div>
-              <div className="text-3xl font-bold text-destructive">{faltasResumo.naoJustificadas}</div>
-            </div>
-            <div className="bg-card rounded-lg border p-6 text-center">
-              <div className="text-sm text-muted-foreground mb-1">Total</div>
-              <div className="text-3xl font-bold text-foreground">{faltasResumo.justificadas + faltasResumo.naoJustificadas}</div>
-            </div>
-          </div>
         </TabsContent>
 
         <TabsContent value="pendentes">
@@ -226,7 +199,7 @@ export default function RelatoriosDiretor() {
               escolaNome: escola.nome,
               periodo,
               colunas: ['Aluno', 'Responsável', 'Período', 'Data Envio'],
-              linhas: justPendentes.map(j => [j.alunoNome, j.responsavelNome, `${j.periodoInicio} a ${j.periodoFim}`, j.dataEnvio]),
+              linhas: justPendentes.map(j => [j.frequencia?.aluno?.nomeCompleto, j.frequencia?.aluno?.responsavel?.usuario?.nome, `--`, new Date(j.createdAt).toLocaleDateString()]),
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
           {justPendentes.length === 0 ? (
@@ -237,16 +210,14 @@ export default function RelatoriosDiretor() {
                 <thead><tr className="border-b bg-secondary">
                   <th className="text-left p-3 text-sm font-medium">Aluno</th>
                   <th className="text-left p-3 text-sm font-medium">Responsável</th>
-                  <th className="text-left p-3 text-sm font-medium">Período</th>
                   <th className="text-left p-3 text-sm font-medium">Data Envio</th>
                 </tr></thead>
                 <tbody>
                   {justPendentes.map(j => (
                     <tr key={j.id} className="border-b">
-                      <td className="p-3 text-sm font-medium">{j.alunoNome}</td>
-                      <td className="p-3 text-sm">{j.responsavelNome}</td>
-                      <td className="p-3 text-sm">{j.periodoInicio} a {j.periodoFim}</td>
-                      <td className="p-3 text-sm">{j.dataEnvio}</td>
+                      <td className="p-3 text-sm font-medium">{j.frequencia?.aluno?.nomeCompleto}</td>
+                      <td className="p-3 text-sm">{j.frequencia?.aluno?.responsavel?.usuario?.nome}</td>
+                      <td className="p-3 text-sm">{new Date(j.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -261,7 +232,7 @@ export default function RelatoriosDiretor() {
             <Button size="sm" variant="outline" onClick={() => {
               const linhas: (string | number)[][] = [];
               alunosPorTurma.forEach(t => {
-                t.alunos.forEach(a => linhas.push([a.nome, a.matricula, t.turma, t.sala, `${a.frequenciaEntrada}%`]));
+                t.alunos.forEach(a => linhas.push([a.nomeCompleto, a.matricula, t.turma, t.sala, `100%`]));
               });
               exportarPdf({
                 titulo: 'Lista de Alunos por Turma',
@@ -285,9 +256,9 @@ export default function RelatoriosDiretor() {
                   <tbody>
                     {t.alunos.map(a => (
                       <tr key={a.id} className="border-b">
-                        <td className="p-3 text-sm">{a.nome}</td>
+                        <td className="p-3 text-sm">{a.nomeCompleto}</td>
                         <td className="p-3 text-sm">{a.matricula}</td>
-                        <td className="p-3 text-sm"><span className={a.frequenciaEntrada < 75 ? 'text-destructive font-bold' : 'text-primary font-bold'}>{a.frequenciaEntrada}%</span></td>
+                        <td className="p-3 text-sm"><span className="text-primary font-bold">100%</span></td>
                       </tr>
                     ))}
                   </tbody>

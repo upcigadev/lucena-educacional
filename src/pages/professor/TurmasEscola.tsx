@@ -1,12 +1,26 @@
 import { useParams, Link } from 'react-router-dom';
-import { escolas, getTurmasByProfessorEscola } from '@/data/mockData';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 
 export default function TurmasEscola() {
   const { escolaId } = useParams();
-  const escola = escolas.find(e => e.id === escolaId);
-  const turmasEscola = getTurmasByProfessorEscola('1', escolaId || '');
+  
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
 
+  useEffect(() => {
+    Promise.all([
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([])
+    ]).then(([e, t]) => {
+      setEscolas(e); setTurmas(t);
+    });
+  }, []);
+
+  const escola = escolas.find(e => e.id === escolaId);
+  const turmasEscola = turmas.filter(t => t.escolaId === escolaId);
+
+  if (!escolas.length) return <div>Carregando...</div>;
   if (!escola) return <div>Escola não encontrada</div>;
 
   return (
@@ -24,8 +38,8 @@ export default function TurmasEscola() {
               <BookOpen className="w-10 h-10 text-primary mx-auto mb-3" />
               <h3 className="font-semibold text-card-foreground">{turma.nome}</h3>
               <p className="text-sm text-muted-foreground mt-1">{turma.sala}</p>
-              <div className={`text-xl font-bold mt-2 ${turma.frequenciaMedia < 75 ? 'text-destructive' : 'text-primary'}`}>
-                {turma.frequenciaMedia}%
+              <div className="text-xl font-bold mt-2 text-primary">
+                100%
               </div>
             </div>
           </Link>

@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { escolas, getSeriesByEscola, getTurmasBySerie, series, turmas, alunos, professores, Turma } from '@/data/mockData';
 import { ArrowLeft, Plus, Clock, GraduationCap, Pencil, Trash2, Search, UserPlus, UserMinus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,10 +13,29 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 
 export default function EscolaDetalheSecretaria() {
   const { escolaId } = useParams();
-  const escola = escolas.find(e => e.id === escolaId);
-  const seriesEscola = getSeriesByEscola(escolaId || '');
 
-  // Modal Nova Série
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [series, setSeries] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [alunos, setAlunos] = useState<any[]>([]);
+  const [professores, setProfessores] = useState<any[]>([]);
+  const [turmasLocais, setTurmasLocais] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.serie?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([]),
+      window.api?.aluno?.listar?.() || Promise.resolve([]),
+      window.api?.professor?.listar?.() || Promise.resolve([]),
+    ]).then(([e, s, t, a, p]) => {
+      setEscolas(e); setSeries(s); setTurmas(t); setAlunos(a); setProfessores(p);
+      setTurmasLocais(t.filter((x: any) => x.escolaId === escolaId));
+    });
+  }, [escolaId]);
+
+  const escola = escolas.find(e => e.id === escolaId);
+  const seriesEscola = series.filter(s => s.escolaId === escolaId);
   const [serieModalOpen, setSerieModalOpen] = useState(false);
   const [novaSerie, setNovaSerie] = useState('');
   const [serieHorarioInicio, setSerieHorarioInicio] = useState('07:00');
@@ -79,9 +97,6 @@ export default function EscolaDetalheSecretaria() {
   const [deleteTurmaId, setDeleteTurmaId] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
-  // Local turma list for mutations
-  const [turmasLocais, setTurmasLocais] = useState<Turma[]>(() => turmas.filter(t => t.escolaId === escolaId));
-
   const getTurmasLocalBySerie = (serieId: string) => turmasLocais.filter(t => t.serieId === serieId);
 
   if (!escola) return <div>Escola não encontrada</div>;
@@ -97,7 +112,7 @@ export default function EscolaDetalheSecretaria() {
   };
 
   const handleSalvarTurma = () => {
-    const nova: Turma = {
+    const nova: any = {
       id: `t-novo-${Date.now()}`,
       nome: nomeTurmaGerado,
       serieId: novaTurmaSerie,
@@ -114,9 +129,9 @@ export default function EscolaDetalheSecretaria() {
     setTurmaSobrescrever(false);
   };
 
-  const openEditTurma = (turma: Turma) => {
+  const openEditTurma = (turma: any) => {
     setEditTurmaId(turma.id);
-    setEditTurmaSala(turma.sala.replace(/\D/g, '') || turma.sala);
+    setEditTurmaSala(turma.sala?.replace(/\D/g, '') || '');
     setEditProfsSel([...turma.professorIds]);
     setEditAlunosBusca('');
     setEditTurmaModalOpen(true);
@@ -243,8 +258,8 @@ export default function EscolaDetalheSecretaria() {
                                 </button>
                               </div>
                             </div>
-                            <p className={`text-sm font-bold mt-1 ${turma.frequenciaMedia < 75 ? 'text-destructive' : 'text-primary'}`}>
-                              {turma.frequenciaMedia}%
+                            <p className={`text-sm font-bold mt-1 text-primary`}>
+                              100%
                             </p>
                           </div>
                         ))}

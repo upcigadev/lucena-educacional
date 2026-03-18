@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { RegistroFrequencia } from '@/data/mockData';
+
+export interface RegistroFrequencia {
+  id: string;
+  data: string;
+  status: 'presente' | 'ausente' | 'justificado';
+}
 
 interface AttendanceCalendarProps {
   registros: RegistroFrequencia[];

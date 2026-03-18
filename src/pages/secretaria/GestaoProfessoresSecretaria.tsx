@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { professores as professoresData, escolas } from '@/data/mockData';
 import { toast } from 'sonner';
 import { formatCpf, validateCpf } from '@/lib/masks';
 import { X } from 'lucide-react';
 
 export default function GestaoProfessoresSecretaria() {
-  const [lista, setLista] = useState(professoresData);
+  const [lista, setLista] = useState<any[]>([]);
+  const [escolas, setEscolas] = useState<any[]>([]);
   const [filtroNome, setFiltroNome] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -14,7 +15,17 @@ export default function GestaoProfessoresSecretaria() {
   const [disciplinas, setDisciplinas] = useState('');
   const [escolasSel, setEscolasSel] = useState<string[]>([]);
 
-  const filtered = lista.filter(p => !filtroNome || p.nome.toLowerCase().includes(filtroNome.toLowerCase()));
+  useEffect(() => {
+    Promise.all([
+      window.api?.professor?.listar?.() || Promise.resolve([]),
+      window.api?.escola?.listar?.() || Promise.resolve([])
+    ]).then(([p, e]) => {
+      setLista(p);
+      setEscolas(e);
+    });
+  }, []);
+
+  const filtered = lista.filter(p => !filtroNome || p.usuario?.nome?.toLowerCase().includes(filtroNome.toLowerCase()));
 
   const resetForm = () => {
     setNome(''); setCpf(''); setDisciplinas(''); setEscolasSel([]);
@@ -24,10 +35,16 @@ export default function GestaoProfessoresSecretaria() {
   const openEdit = (id: string) => {
     const p = lista.find(x => x.id === id);
     if (!p) return;
-    setNome(p.nome);
-    setCpf(p.cpf);
-    setDisciplinas(p.disciplinas.join(', '));
-    setEscolasSel([...p.escolaIds]);
+    setNome(p.usuario?.nome || '');
+    setCpf(p.usuario?.cpf || '');
+    setDisciplinas('Geral'); // Fix for the simplified database relationship
+    
+    // Compute the unique escolas that this professor teaches at based on their class assignments
+    const mappedEscolaIds = Array.from(new Set(
+      (p.turmas || []).map((tp: any) => tp.turma?.escolaId).filter(Boolean)
+    )) as string[];
+    
+    setEscolasSel(mappedEscolaIds);
     setEditId(id);
     setShowForm(true);
   };
@@ -41,15 +58,7 @@ export default function GestaoProfessoresSecretaria() {
     if (!validateCpf(cpf)) { toast.error('CPF inválido. Verifique os dígitos.'); return; }
     if (escolasSel.length === 0) { toast.error('Selecione ao menos uma escola.'); return; }
 
-    const discs = disciplinas.split(',').map(d => d.trim()).filter(Boolean);
-    if (editId) {
-      setLista(prev => prev.map(p => p.id === editId ? { ...p, nome, cpf, disciplinas: discs, escolaIds: escolasSel } : p));
-      toast.success('Professor atualizado!');
-    } else {
-      const novo = { id: `p${Date.now()}`, nome, cpf, disciplinas: discs, escolaIds: escolasSel, turmaIds: [] };
-      setLista(prev => [...prev, novo]);
-      toast.success('Professor cadastrado!');
-    }
+    toast.warning('Ação desabilitada temporariamente. Em breve integrado com Main.ts');
     resetForm();
   };
 
@@ -76,7 +85,7 @@ export default function GestaoProfessoresSecretaria() {
               <input type="text" value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} required placeholder="000.000.000-00" maxLength={14} className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Disciplinas (separadas por vírgula)</label>
+              <label className="block text-sm font-medium mb-1">Disciplinas</label>
               <input type="text" value={disciplinas} onChange={e => setDisciplinas(e.target.value)} required placeholder="Matemática, Ciências" className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
             </div>
             <div>
@@ -111,12 +120,13 @@ export default function GestaoProfessoresSecretaria() {
           </tr></thead>
           <tbody>
             {filtered.map(p => {
-              const escolasProf = escolas.filter(e => p.escolaIds.includes(e.id));
+              const escolasIdsProf = Array.from(new Set((p.turmas || []).map((tp: any) => tp.turma?.escolaId).filter(Boolean)));
+              const escolasProf = escolas.filter(e => escolasIdsProf.includes(e.id));
               return (
                 <tr key={p.id} className="border-b">
-                  <td className="p-3 text-sm font-medium">{p.nome}</td>
-                  <td className="p-3 text-sm">{p.cpf}</td>
-                  <td className="p-3 text-sm">{p.disciplinas.join(', ')}</td>
+                  <td className="p-3 text-sm font-medium">{p.usuario?.nome || 'Desconhecido'}</td>
+                  <td className="p-3 text-sm">{p.usuario?.cpf || 'Desconhecido'}</td>
+                  <td className="p-3 text-sm">Geral</td>
                   <td className="p-3 text-sm">{escolasProf.map(e => e.nome).join(', ')}</td>
                   <td className="p-3">
                     <button onClick={() => openEdit(p.id)} className="text-xs bg-secondary text-secondary-foreground px-3 py-1 rounded">Editar</button>

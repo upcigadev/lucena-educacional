@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { turmas, series, responsaveis } from '@/data/mockData';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,34 +12,47 @@ import CadastroResponsavelModal from '@/components/CadastroResponsavelModal';
 export default function NovoAluno() {
   const navigate = useNavigate();
 
-  // Aba Dados do Aluno
+  const [series, setSeries] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [responsaveis, setResponsaveis] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.serie?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([]),
+      window.api?.responsavel?.listar?.() || Promise.resolve([])
+    ]).then(([s, t, r]) => {
+      setSeries(s); setTurmas(t); setResponsaveis(r);
+    });
+  }, []);
+
   const [nome, setNome] = useState('');
   const [matricula, setMatricula] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [serieSel, setSerieSel] = useState('');
   const [turmaSel, setTurmaSel] = useState('');
 
-  // Responsáveis vinculados
   const [buscaResp, setBuscaResp] = useState('');
   const [responsaveisVinculados, setResponsaveisVinculados] = useState<string[]>([]);
   const [novosResps, setNovosResps] = useState<{ id: string; nome: string; cpf: string; whatsapp: string; parentesco: string }[]>([]);
   const [modalNovoResp, setModalNovoResp] = useState(false);
 
-  // Aba Biometria
   const [bioCapturando, setBioCapturando] = useState(false);
   const [bioRegistrada, setBioRegistrada] = useState(false);
 
-  const seriesEscola = series.filter(s => s.escolaId === '1');
+  const seriesEscola = series; // Simulando
   const turmasFiltradas = turmas.filter(t => t.serieId === serieSel);
 
   const resultadosBusca = useMemo(() => {
     if (!buscaResp.trim()) return [];
     const termo = buscaResp.toLowerCase();
-    return responsaveis.filter(r =>
-      !responsaveisVinculados.includes(r.id) &&
-      (r.nome.toLowerCase().includes(termo) || r.cpf.includes(termo))
-    );
-  }, [buscaResp, responsaveisVinculados]);
+    return responsaveis.filter(r => {
+      const nomeR = r.usuario?.nome || '';
+      const cpfR = r.usuario?.cpf || '';
+      return !responsaveisVinculados.includes(r.id) &&
+        (nomeR.toLowerCase().includes(termo) || cpfR.includes(termo));
+    });
+  }, [buscaResp, responsaveisVinculados, responsaveis]);
 
   const vincularResponsavel = (id: string) => {
     setResponsaveisVinculados(prev => [...prev, id]);
@@ -96,7 +108,6 @@ export default function NovoAluno() {
                 <TabsTrigger value="biometria">Biometria</TabsTrigger>
               </TabsList>
 
-              {/* ===== ABA 1: DADOS DO ALUNO ===== */}
               <TabsContent value="dados">
                 <div className="space-y-4">
                   <div>
@@ -163,7 +174,6 @@ export default function NovoAluno() {
                 </div>
               </TabsContent>
 
-              {/* ===== ABA 2: RESPONSÁVEIS ===== */}
               <TabsContent value="responsaveis">
                 <div className="space-y-4">
                   <div>
@@ -187,8 +197,8 @@ export default function NovoAluno() {
                             className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-accent text-left"
                           >
                             <div>
-                              <span className="font-medium">{r.nome}</span>
-                              <span className="text-muted-foreground ml-2">{r.cpf}</span>
+                              <span className="font-medium">{r.usuario?.nome}</span>
+                              <span className="text-muted-foreground ml-2">{r.usuario?.cpf}</span>
                             </div>
                             <Plus className="w-4 h-4 text-primary" />
                           </button>
@@ -216,10 +226,9 @@ export default function NovoAluno() {
                         return (
                           <div key={id} className="flex items-center justify-between border rounded-md px-3 py-2 bg-muted/30">
                             <div>
-                              <span className="text-sm font-medium">{resp.nome}</span>
-                              <span className="text-xs text-muted-foreground ml-2">{resp.cpf}</span>
-                              <span className="text-xs text-muted-foreground ml-2">({resp.parentesco})</span>
-                              {'whatsapp' in resp && <span className="text-xs text-muted-foreground ml-2">{resp.whatsapp}</span>}
+                              <span className="text-sm font-medium">{resp.usuario?.nome || resp.nome}</span>
+                              <span className="text-xs text-muted-foreground ml-2">{resp.usuario?.cpf || resp.cpf}</span>
+                              <span className="text-xs text-muted-foreground ml-2">({resp.parentesco || 'Mãe/Pai'})</span>
                             </div>
                             <button type="button" onClick={() => desvincularResponsavel(id)} className="text-destructive hover:opacity-70">
                               <X className="w-4 h-4" />
@@ -232,7 +241,6 @@ export default function NovoAluno() {
                 </div>
               </TabsContent>
 
-              {/* ===== ABA 3: BIOMETRIA ===== */}
               <TabsContent value="biometria">
                 <div className="flex flex-col items-center justify-center py-8 space-y-6">
                   <Fingerprint className="w-16 h-16 text-muted-foreground" />
@@ -266,7 +274,6 @@ export default function NovoAluno() {
               </TabsContent>
             </Tabs>
 
-            {/* Botões de ação */}
             <div className="flex gap-3 pt-6 mt-6 border-t">
               <Button type="submit">Salvar Aluno</Button>
               <Button type="button" variant="outline" onClick={() => navigate('/diretor/alunos')}>

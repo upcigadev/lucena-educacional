@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { PerfilUsuario } from '@/data/mockData';
+
+export type PerfilUsuario = 'responsavel' | 'professor' | 'diretor' | 'secretaria';
 
 interface AuthContextType {
   perfil: PerfilUsuario | null;
@@ -11,10 +12,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const nomesPorPerfil: Record<PerfilUsuario, string> = {
-  responsavel: 'Maria da Silva',
-  professor: 'Carlos Mendes',
-  diretor: 'João Ferreira',
-  secretaria: 'Secretaria Municipal de Educação',
+  responsavel: 'Responsável',
+  professor: 'Professor',
+  diretor: 'Diretor',
+  secretaria: 'Secretaria Municipal',
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {

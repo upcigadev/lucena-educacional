@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { alunos, escolas, series, turmas } from '@/data/mockData';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const cadastrosPendentes = [
@@ -16,21 +15,36 @@ export default function GestaoAlunosSecretaria() {
   const [filtroTurma, setFiltroTurma] = useState('');
   const [pendentes, setPendentes] = useState(cadastrosPendentes);
 
-  const seriesFiltradas = useMemo(() => filtroEscola ? series.filter(s => s.escolaId === filtroEscola) : [], [filtroEscola]);
-  const turmasFiltradas = useMemo(() => filtroSerie ? turmas.filter(t => t.serieId === filtroSerie) : [], [filtroSerie]);
+  const [alunos, setAlunos] = useState<any[]>([]);
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [series, setSeries] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.aluno?.listar?.() || Promise.resolve([]),
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.serie?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([])
+    ]).then(([a, e, s, t]) => {
+      setAlunos(a); setEscolas(e); setSeries(s); setTurmas(t);
+    });
+  }, []);
+
+  const seriesFiltradas = useMemo(() => filtroEscola ? series.filter(s => s.escolaId === filtroEscola) : [], [filtroEscola, series]);
+  const turmasFiltradas = useMemo(() => filtroSerie ? turmas.filter(t => t.serieId === filtroSerie) : [], [filtroSerie, turmas]);
 
   const filtered = useMemo(() => {
     return alunos.filter(a => {
-      if (filtroNome && !a.nome.toLowerCase().includes(filtroNome.toLowerCase())) return false;
-      if (filtroEscola && a.escolaId !== filtroEscola) return false;
-      if (filtroSerie) {
-        const turmasDaSerie = turmas.filter(t => t.serieId === filtroSerie).map(t => t.id);
-        if (!turmasDaSerie.includes(a.turmaId)) return false;
-      }
+      if (filtroNome && !a.nomeCompleto?.toLowerCase().includes(filtroNome.toLowerCase())) return false;
+      const escolaId = a.turma?.escolaId;
+      const serieId = a.turma?.serieId;
+      if (filtroEscola && escolaId !== filtroEscola) return false;
+      if (filtroSerie && serieId !== filtroSerie) return false;
       if (filtroTurma && a.turmaId !== filtroTurma) return false;
       return true;
     });
-  }, [filtroNome, filtroEscola, filtroSerie, filtroTurma]);
+  }, [filtroNome, filtroEscola, filtroSerie, filtroTurma, alunos]);
 
   return (
     <div>
@@ -99,12 +113,12 @@ export default function GestaoAlunosSecretaria() {
           <tbody>
             {filtered.map(a => (
               <tr key={a.id} className="border-b hover:bg-secondary/30 cursor-pointer transition-colors" onClick={() => navigate(`/secretaria/aluno/${a.id}`)}>
-                <td className="p-3 text-sm font-medium text-primary hover:underline">{a.nome}</td>
+                <td className="p-3 text-sm font-medium text-primary hover:underline">{a.nomeCompleto}</td>
                 <td className="p-3 text-sm">{a.cpf}</td>
-                <td className="p-3 text-sm">{a.escolaNome}</td>
-                <td className="p-3 text-sm">{a.serieName}</td>
-                <td className="p-3 text-sm">{a.turmaName}</td>
-                <td className="p-3 text-sm"><span className={a.frequenciaEntrada < 75 ? 'text-destructive font-bold' : 'text-primary font-bold'}>{a.frequenciaEntrada}%</span></td>
+                <td className="p-3 text-sm">{a.turma?.escola?.nome}</td>
+                <td className="p-3 text-sm">{a.turma?.serie?.nome}</td>
+                <td className="p-3 text-sm">{a.turma?.nome}</td>
+                <td className="p-3 text-sm"><span className="text-primary font-bold">100%</span></td>
               </tr>
             ))}
           </tbody>

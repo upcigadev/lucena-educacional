@@ -1,11 +1,16 @@
 import { useState } from 'react';
-import { configuracoesEscolas, dispositivos } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { toast } from 'sonner';
 
 export default function ConfiguracoesEscola() {
-  const [config, setConfig] = useState(configuracoesEscolas.find(c => c.escolaId === '1')!);
-  const disps = dispositivos.filter(d => d.escolaId === '1');
+  const [config, setConfig] = useState({ 
+    escolaId: '1', portariaEntradaSaida: true, frequenciaTurma: false, chamadaAppMobile: true, percentualMinimo: 75 
+  });
+  
+  // No device configuration stored yet.
+  const disps = [
+    { id: '1', nome: 'iDFace Portão Principal', ip: '192.168.0.100', status: 'online' as const }
+  ];
 
   const toggle = (key: keyof typeof config) => {
     if (key === 'percentualMinimo' || key === 'escolaId') return;

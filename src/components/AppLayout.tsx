@@ -1,7 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { notificacoes, nomesPerfil, PerfilUsuario } from '@/data/mockData';
+import { useAuth, PerfilUsuario } from '@/contexts/AuthContext';
 import {
   Home, Users, FileText, Settings, BookOpen, GraduationCap,
   School, UserCheck, Bell, LogOut, Menu, X, ChevronDown, User, BarChart3
@@ -49,6 +48,13 @@ const menusPorPerfil: Record<PerfilUsuario, MenuItem[]> = {
   ],
 };
 
+const nomesPerfil: Record<PerfilUsuario, string> = {
+  responsavel: 'Responsável',
+  professor: 'Professor',
+  diretor: 'Diretor',
+  secretaria: 'Secretaria Municipal',
+};
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const { perfil, nomeUsuario, logout } = useAuth();
   const navigate = useNavigate();
@@ -59,8 +65,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   if (!perfil) return null;
 
   const menu = menusPorPerfil[perfil];
-  const notifs = notificacoes[perfil] || [];
-  const unread = notifs.filter(n => !n.lida).length;
+  const notifs: any[] = [];
+  const unread = notifs.filter((n: any) => !n.lida).length;
 
   const handleLogout = () => {
     logout();
@@ -69,12 +75,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full">
-      {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-30 flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300",
         sidebarOpen ? "w-64" : "w-0 -translate-x-full md:w-16 md:translate-x-0"
       )}>
-        {/* Logo area */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
           <School className="w-8 h-8 text-sidebar-primary flex-shrink-0" />
           {sidebarOpen && (
@@ -85,7 +89,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
           )}
         </div>
 
-        {/* Nav items */}
         <nav className="flex-1 py-4 overflow-y-auto">
           {menu.map(item => {
             const isActive = location.pathname === item.path || (item.path !== '/' + perfil && location.pathname.startsWith(item.path + '/'));
@@ -108,7 +111,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        {/* User info */}
         {sidebarOpen && (
           <div className="p-4 border-t border-sidebar-border">
             <div className="text-xs text-sidebar-foreground/60">{nomesPerfil[perfil]}</div>
@@ -117,12 +119,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
         )}
       </aside>
 
-      {/* Main content */}
       <div className={cn(
         "flex-1 flex flex-col transition-all duration-300",
         sidebarOpen ? "ml-64" : "ml-0 md:ml-16"
       )}>
-        {/* Header */}
         <header className="sticky top-0 z-20 bg-card border-b flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-md hover:bg-secondary">
@@ -133,7 +133,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            {/* Notifications */}
             <div className="relative">
               <button onClick={() => setNotifOpen(!notifOpen)} className="p-1.5 rounded-md hover:bg-secondary relative">
                 <Bell className="w-5 h-5" />
@@ -149,7 +148,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   {notifs.length === 0 ? (
                     <div className="p-4 text-sm text-muted-foreground">Nenhuma notificação</div>
                   ) : (
-                    notifs.map(n => (
+                    notifs.map((n: any) => (
                       <div key={n.id} className={cn("p-3 border-b text-sm", !n.lida && "bg-secondary/50")}>
                         <div className="font-medium">{n.titulo}</div>
                         <div className="text-muted-foreground text-xs mt-1">{n.mensagem}</div>
@@ -172,13 +171,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 p-4 md:p-6">
           {children}
         </main>
       </div>
 
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-foreground/20 z-20 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}

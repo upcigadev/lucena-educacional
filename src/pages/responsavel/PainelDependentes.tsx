@@ -1,9 +1,14 @@
 import { Link } from 'react-router-dom';
-import { getDependentes } from '@/data/mockData';
-import { Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function PainelDependentes() {
-  const dependentes = getDependentes('1'); // Maria da Silva
+  const [alunos, setAlunos] = useState<any[]>([]);
+
+  useEffect(() => {
+    window.api?.aluno?.listar?.()?.then(setAlunos).catch(console.error);
+  }, []);
+
+  const dependentes = alunos;
 
   return (
     <div>
@@ -14,22 +19,17 @@ export default function PainelDependentes() {
             <div className="bg-card rounded-lg border p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold text-lg text-card-foreground">{aluno.nome}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{aluno.escolaNome}</p>
-                  <p className="text-sm text-muted-foreground">{aluno.serieName} — {aluno.turmaName}</p>
+                  <h3 className="font-semibold text-lg text-card-foreground">{aluno.nomeCompleto}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{aluno.turma?.escola?.nome}</p>
+                  <p className="text-sm text-muted-foreground">{aluno.turma?.serie?.nome} — {aluno.turma?.nome}</p>
                 </div>
                 <div className="text-right">
-                  <div className={`text-2xl font-bold ${aluno.frequenciaEntrada < 75 ? 'text-destructive' : 'text-primary'}`}>
-                    {aluno.frequenciaEntrada}%
+                  <div className={`text-2xl font-bold text-primary`}>
+                    100%
                   </div>
                   <div className="text-xs text-muted-foreground">Frequência</div>
                 </div>
               </div>
-              {aluno.frequenciaEntrada < 75 && (
-                <div className="freq-alert rounded p-2 mt-3 text-xs">
-                  ⚠️ Frequência abaixo do mínimo de 75%
-                </div>
-              )}
             </div>
           </Link>
         ))}

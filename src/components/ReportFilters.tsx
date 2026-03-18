@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { escolas, series, turmas } from '@/data/mockData';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
@@ -34,6 +33,22 @@ const MESES = [
 ];
 
 export function ReportFilters({ values, onChange, showEscola = true, showSerie = true, showTurma = true, fixedEscolaId, fixedEscolaIds }: ReportFiltersProps) {
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [series, setSeries] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.serie?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([])
+    ]).then(([e, s, t]) => {
+      setEscolas(e);
+      setSeries(s);
+      setTurmas(t);
+    });
+  }, []);
+
   const availableEscolas = fixedEscolaIds ? escolas.filter(e => fixedEscolaIds.includes(e.id)) : escolas;
   const activeEscolaId = fixedEscolaId || values.escolaId;
   const seriesFiltradas = activeEscolaId ? series.filter(s => s.escolaId === activeEscolaId) : [];

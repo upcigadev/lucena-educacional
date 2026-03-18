@@ -1,16 +1,26 @@
 import { Link } from 'react-router-dom';
-import { getEscolasByProfessor, getTurmasByProfessorEscola } from '@/data/mockData';
+import { useState, useEffect } from 'react';
 import { School } from 'lucide-react';
 
 export default function PainelEscolasProfessor() {
-  const escolas = getEscolasByProfessor('1'); // Carlos Mendes
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([])
+    ]).then(([e, t]) => {
+      setEscolas(e); setTurmas(t);
+    });
+  }, []);
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-foreground mb-6">Minhas Escolas</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {escolas.map(escola => {
-          const turmasEscola = getTurmasByProfessorEscola('1', escola.id);
+          const turmasEscola = turmas.filter(t => t.escolaId === escola.id);
           return (
             <Link key={escola.id} to={`/professor/escola/${escola.id}`} className="block">
               <div className="bg-card rounded-lg border p-5 hover:shadow-md transition-shadow">

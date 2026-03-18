@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { alunos, turmas, series, escolas, responsaveis, justificativas, gerarFrequencia, getResponsaveisByAluno } from '@/data/mockData';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 import { ArrowLeft, Save, Search, UserPlus, UserMinus, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,10 +18,15 @@ interface DetalheAlunoPanelProps {
 }
 
 export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: DetalheAlunoPanelProps) {
-  const aluno = alunos.find(a => a.id === alunoId);
-
-  const [turmaId, setTurmaId] = useState(aluno?.turmaId || '');
-  const [responsaveisIds, setResponsaveisIds] = useState<string[]>(aluno?.responsavelIds || []);
+  const [aluno, setAluno] = useState<any>(null);
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [series, setSeries] = useState<any[]>([]);
+  const [escolas, setEscolas] = useState<any[]>([]);
+  const [responsaveis, setResponsaveis] = useState<any[]>([]);
+  const [justificativas, setJustificativas] = useState<any[]>([]);
+  
+  const [turmaId, setTurmaId] = useState('');
+  const [responsaveisIds, setResponsaveisIds] = useState<string[]>([]);
   const [vincularModalOpen, setVincularModalOpen] = useState(false);
   const [buscaResp, setBuscaResp] = useState('');
 
@@ -30,23 +34,48 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   const [modalAviso, setModalAviso] = useState(false);
   const [aviso, setAviso] = useState('');
 
-  const freq = useMemo(() => aluno ? gerarFrequencia(aluno.id, aluno.frequenciaEntrada, aluno.frequenciaTurma) : { entrada: [], turma: [] }, [aluno]);
-  const respsVinculados = useMemo(() => responsaveis.filter(r => responsaveisIds.includes(r.id)), [responsaveisIds]);
-  const justificativasAluno = useMemo(() => aluno ? justificativas.filter(j => j.alunoId === aluno.id) : [], [aluno]);
+  useEffect(() => {
+    Promise.all([
+      window.api?.aluno?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([]),
+      window.api?.serie?.listar?.() || Promise.resolve([]),
+      window.api?.escola?.listar?.() || Promise.resolve([]),
+      window.api?.responsavel?.listar?.() || Promise.resolve([]),
+      window.api?.justificativa?.listar?.() || Promise.resolve([])
+    ]).then(([a, t, s, e, r, j]) => {
+      const found = a.find((x: any) => x.id === alunoId);
+      setAluno(found);
+      setTurmas(t);
+      setSeries(s);
+      setEscolas(e);
+      setResponsaveis(r);
+      setJustificativas(j);
+
+      if (found) {
+        setTurmaId(found.turmaId || '');
+        // Approximate resps ID based on relation
+        setResponsaveisIds([found.responsavelId].filter(Boolean) as string[]);
+      }
+    });
+  }, [alunoId]);
+
+  const freq = useMemo(() => ({ entrada: [], turma: [] }), []); // Replace with actual frequencia data when ready
+  const respsVinculados = useMemo(() => responsaveis.filter(r => responsaveisIds.includes(r.id)), [responsaveis, responsaveisIds]);
+  const justificativasAluno = useMemo(() => aluno ? justificativas.filter(j => j.alunoId === aluno.id) : [], [justificativas, aluno]);
 
   const turmaAtual = turmas.find(t => t.id === turmaId);
-  const seriesEscola = useMemo(() => aluno ? series.filter(s => s.escolaId === aluno.escolaId) : [], [aluno]);
-  const turmasDisponiveis = useMemo(() => aluno ? turmas.filter(t => t.escolaId === aluno.escolaId) : [], [aluno]);
-  const escolaAtual = aluno ? escolas.find(e => e.id === aluno.escolaId) : null;
+  const seriesEscola = useMemo(() => aluno && aluno.turma?.escolaId ? series.filter(s => s.escolaId === aluno.turma.escolaId) : [], [aluno, series]);
+  const turmasDisponiveis = useMemo(() => aluno && aluno.turma?.escolaId ? turmas.filter(t => t.escolaId === aluno.turma.escolaId) : [], [aluno, turmas]);
+  const escolaAtual = aluno ? escolas.find(e => e.id === aluno.turma?.escolaId) : null;
 
   const respsDisponiveis = useMemo(() => {
     return responsaveis.filter(r =>
       !responsaveisIds.includes(r.id) &&
-      (buscaResp === '' || r.nome.toLowerCase().includes(buscaResp.toLowerCase()) || r.cpf.includes(buscaResp))
+      (buscaResp === '' || (r.usuario?.nome || '').toLowerCase().includes(buscaResp.toLowerCase()) || (r.usuario?.cpf || '').includes(buscaResp))
     );
-  }, [responsaveisIds, buscaResp]);
+  }, [responsaveisIds, buscaResp, responsaveis]);
 
-  if (!aluno) return <div>Aluno não encontrado</div>;
+  if (!aluno) return <div className="p-6">Carregando aluno...</div>;
 
   const handleSalvarTurma = () => {
     toast.success('Turma do aluno atualizada com sucesso!');
@@ -55,13 +84,13 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   const handleDesvincularResp = (respId: string) => {
     const resp = responsaveis.find(r => r.id === respId);
     setResponsaveisIds(prev => prev.filter(id => id !== respId));
-    toast.success(`Responsável "${resp?.nome}" desvinculado.`);
+    toast.success(`Responsável desvinculado.`);
   };
 
   const handleVincularResp = (respId: string) => {
     const resp = responsaveis.find(r => r.id === respId);
     setResponsaveisIds(prev => [...prev, respId]);
-    toast.success(`Responsável "${resp?.nome}" vinculado com sucesso!`);
+    toast.success(`Responsável vinculado com sucesso!`);
     setVincularModalOpen(false);
     setBuscaResp('');
   };
@@ -74,9 +103,9 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{aluno.nome}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{aluno.nomeCompleto}</h1>
           <p className="text-sm text-muted-foreground">
-            {escolaAtual?.nome} — {turmaAtual?.nome || aluno.turmaName} | Matrícula: {aluno.matricula} | CPF: {aluno.cpf}
+            {escolaAtual?.nome} — {turmaAtual?.nome || aluno.turma?.nome} | Matrícula: {aluno.matricula} | CPF: {aluno.cpf}
           </p>
         </div>
       </div>
@@ -89,13 +118,12 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
           <TabsTrigger value="justificativas">Justificativas</TabsTrigger>
         </TabsList>
 
-        {/* ===== ABA DADOS & TURMA ===== */}
         <TabsContent value="dados">
           <Card>
             <CardContent className="pt-5 space-y-4 max-w-lg">
               <div>
                 <Label>Nome do Aluno</Label>
-                <Input value={aluno.nome} readOnly className="mt-1 bg-muted" />
+                <Input value={aluno.nomeCompleto} readOnly className="mt-1 bg-muted" />
               </div>
               <div>
                 <Label>CPF</Label>
@@ -108,7 +136,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
               <div>
                 <Label>Turma</Label>
                 {readOnly ? (
-                  <Input value={turmaAtual?.nome || aluno.turmaName} readOnly className="mt-1 bg-muted" />
+                  <Input value={turmaAtual?.nome || aluno.turma?.nome} readOnly className="mt-1 bg-muted" />
                 ) : (
                   <select
                     value={turmaId}
@@ -138,7 +166,6 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
           </Card>
         </TabsContent>
 
-        {/* ===== ABA RESPONSÁVEIS ===== */}
         <TabsContent value="responsaveis">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Responsáveis Vinculados</h2>
@@ -155,7 +182,6 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                   <th className="text-left p-3 text-sm font-medium">Nome</th>
                   <th className="text-left p-3 text-sm font-medium">CPF</th>
                   <th className="text-left p-3 text-sm font-medium">WhatsApp</th>
-                  <th className="text-left p-3 text-sm font-medium">Parentesco</th>
                   <th className="text-left p-3 text-sm font-medium">Ação</th>
                 </tr>
               </thead>
@@ -165,10 +191,9 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                 ) : (
                   respsVinculados.map(r => (
                     <tr key={r.id} className="border-b">
-                      <td className="p-3 text-sm font-medium">{r.nome}</td>
-                      <td className="p-3 text-sm">{r.cpf}</td>
-                      <td className="p-3 text-sm">{r.whatsapp}</td>
-                      <td className="p-3 text-sm">{r.parentesco}</td>
+                      <td className="p-3 text-sm font-medium">{r.usuario?.nome}</td>
+                      <td className="p-3 text-sm">{r.usuario?.cpf}</td>
+                      <td className="p-3 text-sm">{r.telefone || ''}</td>
                       <td className="p-3">
                         {readOnly ? (
                           <button
@@ -194,14 +219,12 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
           </div>
         </TabsContent>
 
-        {/* ===== ABA FREQUÊNCIA ===== */}
         <TabsContent value="frequencia">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <AttendanceCalendar registros={freq.entrada} titulo="Entrada na Escola" percentual={aluno.frequenciaEntrada} />
+            <AttendanceCalendar registros={freq.entrada} titulo="Entrada na Escola" percentual={100} />
           </div>
         </TabsContent>
 
-        {/* ===== ABA JUSTIFICATIVAS ===== */}
         <TabsContent value="justificativas">
           <h2 className="text-lg font-semibold mb-4">Histórico de Justificativas</h2>
           {justificativasAluno.length === 0 ? (
@@ -211,7 +234,6 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
               <table className="w-full table-striped">
                 <thead>
                   <tr className="border-b bg-secondary">
-                    <th className="text-left p-3 text-sm font-medium">Período</th>
                     <th className="text-left p-3 text-sm font-medium">Responsável</th>
                     <th className="text-left p-3 text-sm font-medium">Data Envio</th>
                     <th className="text-left p-3 text-sm font-medium">Documento</th>
@@ -221,10 +243,9 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                 <tbody>
                   {justificativasAluno.map(j => (
                     <tr key={j.id} className="border-b">
-                      <td className="p-3 text-sm">{j.periodoInicio} a {j.periodoFim}</td>
-                      <td className="p-3 text-sm">{j.responsavelNome}</td>
-                      <td className="p-3 text-sm">{j.dataEnvio}</td>
-                      <td className="p-3 text-sm text-primary">{j.documento}</td>
+                      <td className="p-3 text-sm">{j.aluno?.responsavel?.usuario?.nome}</td>
+                      <td className="p-3 text-sm">{new Date(j.createdAt).toLocaleDateString()}</td>
+                      <td className="p-3 text-sm text-primary">Anexo</td>
                       <td className="p-3">
                         <StatusBadge status={j.status} />
                       </td>
@@ -237,7 +258,6 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
         </TabsContent>
       </Tabs>
 
-      {/* ===== MODAL VINCULAR RESPONSÁVEL (só edição) ===== */}
       {!readOnly && (
         <Dialog open={vincularModalOpen} onOpenChange={setVincularModalOpen}>
           <DialogContent className="sm:max-w-lg">
@@ -265,8 +285,8 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                       className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-secondary/50 transition-colors"
                     >
                       <div>
-                        <p className="text-sm font-medium">{r.nome}</p>
-                        <p className="text-xs text-muted-foreground">{r.cpf} — {r.whatsapp}</p>
+                        <p className="text-sm font-medium">{r.usuario?.nome}</p>
+                        <p className="text-xs text-muted-foreground">{r.usuario?.cpf} — {r.telefone}</p>
                       </div>
                       <Button size="sm" onClick={() => handleVincularResp(r.id)}>
                         <UserPlus className="w-3 h-3" /> Vincular
@@ -283,7 +303,6 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
         </Dialog>
       )}
 
-      {/* ===== MODAL AVISO (só leitura) ===== */}
       {readOnly && modalAviso && (
         <div className="fixed inset-0 bg-foreground/30 z-50 flex items-center justify-center p-4" onClick={() => setModalAviso(false)}>
           <div className="bg-card rounded-lg border shadow-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>

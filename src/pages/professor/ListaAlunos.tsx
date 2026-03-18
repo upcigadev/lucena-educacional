@@ -1,16 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { alunos, turmas, professores } from '@/data/mockData';
 
 export default function ListaAlunos() {
-  const prof = professores[0]; // Carlos Mendes
-  const meusAlunos = alunos.filter(a => prof.turmaIds.includes(a.turmaId));
+  const [alunos, setAlunos] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
   const [filtroNome, setFiltroNome] = useState('');
   const [filtroTurma, setFiltroTurma] = useState('');
 
-  const turmasProf = turmas.filter(t => prof.turmaIds.includes(t.id));
+  useEffect(() => {
+    Promise.all([
+      window.api?.aluno?.listar?.() || Promise.resolve([]),
+      window.api?.turma?.listar?.() || Promise.resolve([])
+    ]).then(([a, t]) => {
+      setAlunos(a); setTurmas(t);
+    });
+  }, []);
+
+  const meusAlunos = alunos;
+  const turmasProf = turmas;
+  
   const filtered = meusAlunos.filter(a => {
-    if (filtroNome && !a.nome.toLowerCase().includes(filtroNome.toLowerCase())) return false;
+    if (filtroNome && !a.nomeCompleto.toLowerCase().includes(filtroNome.toLowerCase())) return false;
     if (filtroTurma && a.turmaId !== filtroTurma) return false;
     return true;
   });
@@ -36,23 +46,19 @@ export default function ListaAlunos() {
               <th className="text-left p-3 text-sm font-medium">CPF</th>
               <th className="text-left p-3 text-sm font-medium">Turma</th>
               <th className="text-left p-3 text-sm font-medium">Freq. Entrada</th>
-              {/* <th className="text-left p-3 text-sm font-medium">Freq. Turma</th> */}
             </tr>
           </thead>
           <tbody>
             {filtered.map(a => (
               <tr key={a.id} className="border-b cursor-pointer hover:bg-secondary/50">
                 <td className="p-3 text-sm">
-                  <Link to={`/professor/aluno/${a.id}`} className="text-primary font-medium hover:underline">{a.nome}</Link>
+                  <Link to={`/professor/aluno/${a.id}`} className="text-primary font-medium hover:underline">{a.nomeCompleto}</Link>
                 </td>
-                <td className="p-3 text-sm">{a.cpf}</td>
-                <td className="p-3 text-sm">{a.turmaName}</td>
+                <td className="p-3 text-sm">{a.cpf || '--'}</td>
+                <td className="p-3 text-sm">{a.turma?.nome}</td>
                 <td className="p-3 text-sm font-medium">
-                  <span className={a.frequenciaEntrada < 75 ? 'text-destructive' : 'text-primary'}>{a.frequenciaEntrada}%</span>
+                  <span className="text-primary">100%</span>
                 </td>
-                {/* <td className="p-3 text-sm font-medium">
-                  <span className={a.frequenciaTurma < 75 ? 'text-destructive' : 'text-primary'}>{a.frequenciaTurma}%</span>
-                </td> */}
               </tr>
             ))}
           </tbody>
