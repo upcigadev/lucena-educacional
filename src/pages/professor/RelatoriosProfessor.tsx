@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { alunos, turmas, gerarFrequencia } from '@/data/mockData';
 import { ReportFilters, useDefaultFilters } from '@/components/ReportFilters';
 import { exportarPdf } from '@/lib/pdfExport';
@@ -7,7 +7,6 @@ import { FileDown, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
-// Professor id=1 (Carlos Mendes), turmas t1, t2, t7
 const PROF_TURMA_IDS = ['t1', 't2', 't7'];
 
 function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
@@ -26,6 +25,9 @@ function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
 export default function RelatoriosProfessor() {
   const [filters, setFilters] = useDefaultFilters();
 
+  const chartFreqRef = useRef<HTMLDivElement>(null);
+  const chartFaltasRef = useRef<HTMLDivElement>(null);
+
   const turmasProf = useMemo(() => turmas.filter(t => PROF_TURMA_IDS.includes(t.id)), []);
 
   const alunosFiltrados = useMemo(() => {
@@ -34,7 +36,6 @@ export default function RelatoriosProfessor() {
     return lista;
   }, [filters.turmaId]);
 
-  // 1. Frequência por turma
   const freqPorTurma = useMemo(() => {
     return turmasProf.map(t => {
       const alunosTurma = alunos.filter(a => a.turmaId === t.id);
@@ -43,10 +44,8 @@ export default function RelatoriosProfessor() {
     });
   }, [turmasProf]);
 
-  // 2. Alunos abaixo de 75%
   const alunosBaixaFreq = useMemo(() => alunosFiltrados.filter(a => a.frequenciaEntrada < 75), [alunosFiltrados]);
 
-  // 3. Faltas por aluno
   const faltasPorAluno = useMemo(() => {
     return alunosFiltrados.map(a => {
       const freq = gerarFrequencia(a.id, a.frequenciaEntrada, a.frequenciaTurma);
@@ -67,7 +66,6 @@ export default function RelatoriosProfessor() {
 
       <ReportFilters values={filters} onChange={setFilters} showEscola={false} showSerie={false} showTurma={false} />
 
-      {/* Filtro por turma do professor */}
       <div className="flex flex-wrap gap-3 mb-6">
         <select value={filters.turmaId} onChange={e => setFilters({ ...filters, turmaId: e.target.value })}
           className="px-3 py-2 border rounded-md bg-background text-sm">
@@ -83,7 +81,6 @@ export default function RelatoriosProfessor() {
           <TabsTrigger value="faltas" className="text-xs">Faltas por Aluno</TabsTrigger>
         </TabsList>
 
-        {/* Frequência por turma */}
         <TabsContent value="frequencia">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Frequência dos Alunos por Turma</h2>
@@ -92,10 +89,10 @@ export default function RelatoriosProfessor() {
               periodo,
               colunas: ['Turma', 'Sala', 'Alunos', 'Freq. Média'],
               linhas: freqPorTurma.map(t => [t.nome, t.sala, t.qtdAlunos, `${t.media}%`]),
+              chartElement: chartFreqRef.current,
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
-          {/* Bar chart */}
-          <div className="bg-card rounded-lg border p-4 mb-4">
+          <div ref={chartFreqRef} className="bg-card rounded-lg border p-4 mb-4">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={freqPorTurma.map(t => ({ nome: t.nome, media: t.media }))} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -121,7 +118,6 @@ export default function RelatoriosProfessor() {
           </div>
         </TabsContent>
 
-        {/* Alunos abaixo de 75% */}
         <TabsContent value="baixa">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Alunos com Frequência Abaixo de 75%</h2>
@@ -156,7 +152,6 @@ export default function RelatoriosProfessor() {
           )}
         </TabsContent>
 
-        {/* Faltas por aluno */}
         <TabsContent value="faltas">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Faltas Justificadas vs Não Justificadas por Aluno</h2>
@@ -165,10 +160,10 @@ export default function RelatoriosProfessor() {
               periodo,
               colunas: ['Aluno', 'Turma', 'Justificadas', 'Não Justificadas', 'Total'],
               linhas: faltasPorAluno.map(f => [f.nome, f.turma, f.justificadas, f.naoJustificadas, f.total]),
+              chartElement: chartFaltasRef.current,
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
-          {/* Stacked bar chart */}
-          <div className="bg-card rounded-lg border p-4 mb-4">
+          <div ref={chartFaltasRef} className="bg-card rounded-lg border p-4 mb-4">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={faltasPorAluno.map(f => ({ nome: f.nome.split(' ')[0], justificadas: f.justificadas, naoJustificadas: f.naoJustificadas }))} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />

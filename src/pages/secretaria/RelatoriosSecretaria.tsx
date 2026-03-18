@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { escolas, alunos, turmas, series, professores, justificativas, gerarFrequencia } from '@/data/mockData';
 import { ReportFilters, useDefaultFilters } from '@/components/ReportFilters';
 import { exportarPdf } from '@/lib/pdfExport';
@@ -23,7 +23,9 @@ function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
 export default function RelatoriosSecretaria() {
   const [filters, setFilters] = useDefaultFilters();
 
-  // Dados filtrados por escola
+  const chartRankingRef = useRef<HTMLDivElement>(null);
+  const chartFaltasRef = useRef<HTMLDivElement>(null);
+
   const alunosFiltrados = useMemo(() => {
     let lista = [...alunos];
     if (filters.escolaId) lista = lista.filter(a => a.escolaId === filters.escolaId);
@@ -41,7 +43,6 @@ export default function RelatoriosSecretaria() {
     return lista;
   }, [filters]);
 
-  // 1. Ranking escolas
   const rankingEscolas = useMemo(() => {
     return escolas.map(e => {
       const alunosEsc = alunos.filter(a => a.escolaId === e.id);
@@ -50,10 +51,8 @@ export default function RelatoriosSecretaria() {
     }).sort((a, b) => b.media - a.media);
   }, []);
 
-  // 2. Alunos abaixo de 75%
   const alunosBaixaFreq = useMemo(() => alunosFiltrados.filter(a => a.frequenciaEntrada < 75), [alunosFiltrados]);
 
-  // 3. Faltas justificadas vs não
   const faltasPorEscola = useMemo(() => {
     const map = new Map<string, { escola: string; justificadas: number; naoJustificadas: number }>();
     const escolasList = filters.escolaId ? escolas.filter(e => e.id === filters.escolaId) : escolas;
@@ -72,10 +71,8 @@ export default function RelatoriosSecretaria() {
     return Array.from(map.values());
   }, [filters.escolaId]);
 
-  // 4. Justificativas pendentes
   const justPendentes = useMemo(() => justFiltradas.filter(j => j.status === 'pendente'), [justFiltradas]);
 
-  // 5. Professores por escola
   const profsPorEscola = useMemo(() => {
     const result: { professor: string; disciplinas: string; escola: string; turmas: string }[] = [];
     const escolasList = filters.escolaId ? escolas.filter(e => e.id === filters.escolaId) : escolas;
@@ -109,7 +106,6 @@ export default function RelatoriosSecretaria() {
           <TabsTrigger value="professores" className="text-xs">Professores</TabsTrigger>
         </TabsList>
 
-        {/* Ranking escolas */}
         <TabsContent value="ranking">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Frequência Geral por Escola</h2>
@@ -118,10 +114,10 @@ export default function RelatoriosSecretaria() {
               periodo,
               colunas: ['Pos.', 'Escola', 'Alunos', 'Freq. Média'],
               linhas: rankingEscolas.map((e, i) => [i + 1, e.nome, e.qtdAlunos, `${e.media}%`]),
+              chartElement: chartRankingRef.current,
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
-          {/* Chart */}
-          <div className="bg-card rounded-lg border p-4 mb-4">
+          <div ref={chartRankingRef} className="bg-card rounded-lg border p-4 mb-4">
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={rankingEscolas.map(e => ({ nome: e.nome.replace('Escola Municipal ', 'E.M. '), media: e.media }))} margin={{ top: 10, right: 20, left: 0, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -158,7 +154,6 @@ export default function RelatoriosSecretaria() {
           </div>
         </TabsContent>
 
-        {/* Alunos abaixo de 75% */}
         <TabsContent value="baixa">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Alunos com Frequência Abaixo de 75%</h2>
@@ -198,7 +193,6 @@ export default function RelatoriosSecretaria() {
           )}
         </TabsContent>
 
-        {/* Faltas justificadas vs não */}
         <TabsContent value="faltas">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Faltas Justificadas vs Não Justificadas</h2>
@@ -207,10 +201,10 @@ export default function RelatoriosSecretaria() {
               periodo,
               colunas: ['Escola', 'Justificadas', 'Não Justificadas', 'Total'],
               linhas: faltasPorEscola.map(f => [f.escola, f.justificadas, f.naoJustificadas, f.justificadas + f.naoJustificadas]),
+              chartElement: chartFaltasRef.current,
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
-          {/* Chart */}
-          <div className="bg-card rounded-lg border p-4 mb-4">
+          <div ref={chartFaltasRef} className="bg-card rounded-lg border p-4 mb-4">
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={faltasPorEscola.map(f => ({ nome: f.escola.replace('Escola Municipal ', 'E.M. '), justificadas: f.justificadas, naoJustificadas: f.naoJustificadas }))} margin={{ top: 10, right: 20, left: 0, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -245,7 +239,6 @@ export default function RelatoriosSecretaria() {
           </div>
         </TabsContent>
 
-        {/* Justificativas pendentes */}
         <TabsContent value="pendentes">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Justificativas Pendentes de Análise</h2>
@@ -284,7 +277,6 @@ export default function RelatoriosSecretaria() {
           )}
         </TabsContent>
 
-        {/* Matrícula */}
         <TabsContent value="matricula">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Relatório de Matrícula</h2>
@@ -322,7 +314,6 @@ export default function RelatoriosSecretaria() {
           </div>
         </TabsContent>
 
-        {/* Professores */}
         <TabsContent value="professores">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Professores por Escola e Turma</h2>

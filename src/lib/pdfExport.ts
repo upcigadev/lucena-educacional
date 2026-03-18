@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import html2canvas from 'html2canvas';
 
 interface PdfExportOptions {
   titulo: string;
@@ -9,9 +10,21 @@ interface PdfExportOptions {
   periodo?: string;
   colunas: string[];
   linhas: (string | number)[][];
+  chartElement?: HTMLElement | null;
 }
 
-export function exportarPdf({ titulo, escolaNome, periodo, colunas, linhas }: PdfExportOptions) {
+export async function capturarGrafico(element: HTMLElement | null): Promise<string | undefined> {
+  if (!element) return undefined;
+  const canvas = await html2canvas(element, {
+    backgroundColor: '#ffffff',
+    scale: 2,
+    logging: false,
+    useCORS: true,
+  });
+  return canvas.toDataURL('image/png');
+}
+
+export async function exportarPdf({ titulo, escolaNome, periodo, colunas, linhas, chartElement }: PdfExportOptions) {
   const doc = new jsPDF();
   const dataGeracao = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
 
@@ -47,6 +60,22 @@ export function exportarPdf({ titulo, escolaNome, periodo, colunas, linhas }: Pd
   doc.setFont('helvetica', 'bold');
   doc.text(titulo, 14, yPos);
   yPos += 6;
+
+  // Chart image
+  if (chartElement) {
+    try {
+      const chartImage = await capturarGrafico(chartElement);
+      if (chartImage) {
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const imgWidth = pageWidth - 28;
+        const imgHeight = imgWidth * 0.45;
+        doc.addImage(chartImage, 'PNG', 14, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + 6;
+      }
+    } catch (e) {
+      console.warn('Falha ao capturar gráfico para PDF:', e);
+    }
+  }
 
   // Table
   autoTable(doc, {
