@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite" // Ideal para o Electron local
-  url      = "file:./lucena-db.sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ==========================================
@@ -12,14 +12,15 @@ datasource db {
 // ==========================================
 
 model Usuario {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  senhaHash String
-  nome      String
-  cpf       String   @unique
-  papel     String   // "SECRETARIA", "DIRETOR", "PROFESSOR", "RESPONSAVEL"
-  ativo     Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id             String   @id @default(uuid())
+  email          String   @unique
+  senhaHash      String
+  nome           String
+  cpf            String   @unique
+  papel          String   // "SECRETARIA", "DIRETOR", "PROFESSOR", "RESPONSAVEL"
+  ativo          Boolean  @default(true)
+  primeiroAcesso Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
   // Relacionamentos de Perfil (1 para 1)
   diretor     Diretor?

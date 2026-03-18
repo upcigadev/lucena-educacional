@@ -13,18 +13,20 @@ export default function GestaoTurmas() {
   const [professores, setProfessores] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<any[]>([]);
 
-  useEffect(() => {
-    Promise.all([
+  const carregarDados = async () => {
+    const [t, s, p, a] = await Promise.all([
       window.api?.turma?.listar?.() || Promise.resolve([]),
       window.api?.serie?.listar?.() || Promise.resolve([]),
       window.api?.professor?.listar?.() || Promise.resolve([]),
-      window.api?.aluno?.listar?.() || Promise.resolve([])
-    ]).then(([t, s, p, a]) => {
-      setLista(t); setSeries(s); setProfessores(p); setAlunos(a);
-    });
-  }, []);
+      window.api?.aluno?.listar?.() || Promise.resolve([]),
+    ]);
+    setLista(t); setSeries(s); setProfessores(p); setAlunos(a);
+  };
+
+  useEffect(() => { carregarDados(); }, []);
 
   const [showForm, setShowForm] = useState(false);
+  const [isLoadingCriar, setIsLoadingCriar] = useState(false);
   const [serieSel, setSerieSel] = useState('');
   const [sala, setSala] = useState('');
   const [profsSel, setProfsSel] = useState<string[]>([]);
@@ -61,11 +63,25 @@ export default function GestaoTurmas() {
   const toggleProf = (id: string) => setProfsSel(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
   const toggleEditProf = (id: string) => setEditProfsSel(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
 
-  const handleCriar = (e: React.FormEvent) => {
+  const handleCriar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (profsSel.length === 0) { toast.error('Selecione ao menos um professor.'); return; }
-    toast.success(`Turma "${nomeTurma}" seria criada via IPC!`);
-    setShowForm(false); setSerieSel(''); setSala(''); setProfsSel([]);
+    if (!serieSel) { toast.error('Selecione uma série.'); return; }
+    setIsLoadingCriar(true);
+    try {
+      await window.api?.turma?.criar?.({
+        nome: nomeTurma,
+        serieId: serieSel,
+        escolaId: series.find(s => s.id === serieSel)?.escolaId || '',
+        sobrescreverRegras: false,
+      });
+      toast.success(`Turma "${nomeTurma}" criada com sucesso!`);
+      setShowForm(false); setSerieSel(''); setSala(''); setProfsSel([]);
+      await carregarDados();
+    } catch (err: any) {
+      toast.error(`Erro ao criar turma: ${err.message}`);
+    } finally {
+      setIsLoadingCriar(false);
+    }
   };
 
   const openEdit = (turma: any) => {
@@ -143,7 +159,9 @@ export default function GestaoTurmas() {
               </div>
             </div>
 
-            <button type="submit" className="bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium hover:opacity-90">Criar Turma</button>
+            <button type="submit" disabled={isLoadingCriar} className="bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium hover:opacity-90 disabled:opacity-50">
+              {isLoadingCriar ? 'Criando...' : 'Criar Turma'}
+            </button>
           </form>
         </div>
       )}

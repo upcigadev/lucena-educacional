@@ -1,1 +1,52 @@
-"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("api",{usuario:{login:r=>e.ipcRenderer.invoke("usuario:login",r)},escola:{listar:()=>e.ipcRenderer.invoke("escola:listar")},turma:{listar:()=>e.ipcRenderer.invoke("turma:listar")},serie:{listar:()=>e.ipcRenderer.invoke("serie:listar")},aluno:{criar:r=>e.ipcRenderer.invoke("aluno:criar",r),listar:()=>e.ipcRenderer.invoke("aluno:listar")},professor:{listar:()=>e.ipcRenderer.invoke("professor:listar")},justificativa:{listar:()=>e.ipcRenderer.invoke("justificativa:listar")},responsavel:{listar:()=>e.ipcRenderer.invoke("responsavel:listar")},diretor:{listar:()=>e.ipcRenderer.invoke("diretor:listar")},frequencia:{registrarPassagem:r=>e.ipcRenderer.invoke("frequencia:registrarPassagem",r),listar:()=>e.ipcRenderer.invoke("frequencia:listar")},hardware:{iniciarCadastroBiometrico:(r,i)=>e.ipcRenderer.invoke("hardware:iniciarCadastroBiometrico",r,i)},onNovaFrequencia:r=>{e.ipcRenderer.on("nova-frequencia-registada",(i,a)=>r(a))}});
+"use strict";
+const electron = require("electron");
+electron.contextBridge.exposeInMainWorld("api", {
+  usuario: {
+    login: (credentials) => electron.ipcRenderer.invoke("usuario:login", credentials)
+  },
+  escola: {
+    listar: () => electron.ipcRenderer.invoke("escola:listar"),
+    criar: (d) => electron.ipcRenderer.invoke("escola:criar", d)
+  },
+  turma: {
+    listar: () => electron.ipcRenderer.invoke("turma:listar"),
+    criar: (d) => electron.ipcRenderer.invoke("turma:criar", d)
+  },
+  serie: {
+    listar: () => electron.ipcRenderer.invoke("serie:listar"),
+    criar: (d) => electron.ipcRenderer.invoke("serie:criar", d)
+  },
+  aluno: {
+    listar: () => electron.ipcRenderer.invoke("aluno:listar"),
+    criar: (d) => electron.ipcRenderer.invoke("aluno:criar", d)
+  },
+  diretor: {
+    listar: () => electron.ipcRenderer.invoke("diretor:listar"),
+    criar: (d) => electron.ipcRenderer.invoke("diretor:criar", d)
+  },
+  professor: {
+    listar: () => electron.ipcRenderer.invoke("professor:listar"),
+    criar: (d) => electron.ipcRenderer.invoke("professor:criar", d)
+  },
+  responsavel: {
+    listar: () => electron.ipcRenderer.invoke("responsavel:listar"),
+    criar: (d) => electron.ipcRenderer.invoke("responsavel:criar", d)
+  },
+  secretaria: {
+    listar: () => electron.ipcRenderer.invoke("secretaria:listar"),
+    criar: (d) => electron.ipcRenderer.invoke("secretaria:criar", d)
+  },
+  justificativa: {
+    listar: () => electron.ipcRenderer.invoke("justificativa:listar")
+  },
+  frequencia: {
+    listar: () => electron.ipcRenderer.invoke("frequencia:listar"),
+    registrarPassagem: (idEquipamento) => electron.ipcRenderer.invoke("frequencia:registrarPassagem", idEquipamento)
+  },
+  hardware: {
+    iniciarCadastroBiometrico: (alunoId, ipiDFace) => electron.ipcRenderer.invoke("hardware:iniciarCadastroBiometrico", alunoId, ipiDFace)
+  },
+  onNovaFrequencia: (callback) => {
+    electron.ipcRenderer.on("nova-frequencia-registada", (_event, value) => callback(value));
+  }
+});

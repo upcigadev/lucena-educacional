@@ -21,17 +21,20 @@ export default function EscolaDetalheSecretaria() {
   const [professores, setProfessores] = useState<any[]>([]);
   const [turmasLocais, setTurmasLocais] = useState<any[]>([]);
 
-  useEffect(() => {
-    Promise.all([
+  const carregarDados = async () => {
+    const [e, s, t, a, p] = await Promise.all([
       window.api?.escola?.listar?.() || Promise.resolve([]),
       window.api?.serie?.listar?.() || Promise.resolve([]),
       window.api?.turma?.listar?.() || Promise.resolve([]),
       window.api?.aluno?.listar?.() || Promise.resolve([]),
       window.api?.professor?.listar?.() || Promise.resolve([]),
-    ]).then(([e, s, t, a, p]) => {
-      setEscolas(e); setSeries(s); setTurmas(t); setAlunos(a); setProfessores(p);
-      setTurmasLocais(t.filter((x: any) => x.escolaId === escolaId));
-    });
+    ]);
+    setEscolas(e); setSeries(s); setTurmas(t); setAlunos(a); setProfessores(p);
+    setTurmasLocais(t.filter((x: any) => x.escolaId === escolaId));
+  };
+
+  useEffect(() => {
+    carregarDados();
   }, [escolaId]);
 
   const escola = escolas.find(e => e.id === escolaId);
@@ -51,6 +54,10 @@ export default function EscolaDetalheSecretaria() {
   const [turmaHorarioInicio, setTurmaHorarioInicio] = useState('07:00');
   const [turmaTolerancia, setTurmaTolerancia] = useState('15');
   const [turmaLimiteMax, setTurmaLimiteMax] = useState('07:30');
+
+  // Loading states for modals
+  const [isLoadingSerie, setIsLoadingSerie] = useState(false);
+  const [isLoadingTurma, setIsLoadingTurma] = useState(false);
 
   // Auto-generate turma name
   const proximaLetraTurma = useMemo(() => {
@@ -101,32 +108,57 @@ export default function EscolaDetalheSecretaria() {
 
   if (!escola) return <div>Escola não encontrada</div>;
 
-  const handleSalvarSerie = () => {
-    toast.success(`Série "${novaSerie}" criada com sucesso!`);
-    setSerieModalOpen(false);
-    setNovaSerie('');
-    setSerieHorarioInicio('07:00');
-    setSerieTolerancia('15');
-    setSerieLimiteMax('07:30');
-    setSerieAplicarTodas(true);
+  const handleSalvarSerie = async () => {
+    if (!novaSerie.trim()) { toast.error('O nome da série é obrigatório.'); return; }
+    setIsLoadingSerie(true);
+    try {
+      await window.api?.serie?.criar?.({
+        nome: novaSerie,
+        escolaId,
+        horarioInicio: serieHorarioInicio,
+        toleranciaMinutos: Number(serieTolerancia),
+        limiteEntrada: serieLimiteMax,
+        aplicarTodasTurmas: serieAplicarTodas,
+      });
+      toast.success(`Série "${novaSerie}" criada com sucesso!`);
+      setSerieModalOpen(false);
+      setNovaSerie('');
+      setSerieHorarioInicio('07:00');
+      setSerieTolerancia('15');
+      setSerieLimiteMax('07:30');
+      setSerieAplicarTodas(true);
+      await carregarDados();
+    } catch (err: any) {
+      toast.error(`Erro ao criar série: ${err.message}`);
+    } finally {
+      setIsLoadingSerie(false);
+    }
   };
 
-  const handleSalvarTurma = () => {
-    const nova: any = {
-      id: `t-novo-${Date.now()}`,
-      nome: nomeTurmaGerado,
-      serieId: novaTurmaSerie,
-      escolaId: escolaId || '1',
-      sala: `Sala ${novaTurmaSala}`,
-      professorIds: [],
-      frequenciaMedia: 0,
-    };
-    setTurmasLocais(prev => [...prev, nova]);
-    toast.success(`Turma "${nomeTurmaGerado}" criada com sucesso!`);
-    setTurmaModalOpen(false);
-    setNovaTurmaSerie('');
-    setNovaTurmaSala('');
-    setTurmaSobrescrever(false);
+  const handleSalvarTurma = async () => {
+    if (!novaTurmaSerie) { toast.error('Selecione uma série.'); return; }
+    setIsLoadingTurma(true);
+    try {
+      await window.api?.turma?.criar?.({
+        nome: nomeTurmaGerado,
+        serieId: novaTurmaSerie,
+        escolaId: escolaId || '',
+        sobrescreverRegras: turmaSobrescrever,
+        horarioInicio: turmaSobrescrever ? turmaHorarioInicio : null,
+        toleranciaMinutos: turmaSobrescrever ? Number(turmaTolerancia) : null,
+        limiteEntrada: turmaSobrescrever ? turmaLimiteMax : null,
+      });
+      toast.success(`Turma "${nomeTurmaGerado}" criada com sucesso!`);
+      setTurmaModalOpen(false);
+      setNovaTurmaSerie('');
+      setNovaTurmaSala('');
+      setTurmaSobrescrever(false);
+      await carregarDados();
+    } catch (err: any) {
+      toast.error(`Erro ao criar turma: ${err.message}`);
+    } finally {
+      setIsLoadingTurma(false);
+    }
   };
 
   const openEditTurma = (turma: any) => {
@@ -321,7 +353,9 @@ export default function EscolaDetalheSecretaria() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSerieModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSalvarSerie}>Salvar Série</Button>
+            <Button onClick={handleSalvarSerie} disabled={isLoadingSerie}>
+              {isLoadingSerie ? 'Salvando...' : 'Salvar Série'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -406,7 +440,9 @@ export default function EscolaDetalheSecretaria() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTurmaModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSalvarTurma}>Salvar Turma</Button>
+            <Button onClick={handleSalvarTurma} disabled={isLoadingTurma}>
+              {isLoadingTurma ? 'Salvando...' : 'Salvar Turma'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
-import fs from 'fs';
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { fileURLToPath } from 'url';
@@ -9,13 +8,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Prisma safely for ASAR
-const dbPath = path.join(app.getPath('userData'), 'lucena-db.sqlite');
-const prisma = new PrismaClient({
-  datasources: {
-    db: { url: `file:${dbPath}` },
-  },
-});
+const prisma = new PrismaClient();
+
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -79,6 +73,15 @@ function setupIpcHandlers() {
     });
   });
 
+  ipcMain.handle('escola:criar', async (_, data) => {
+    try {
+      return await prisma.escola.create({ data });
+    } catch (error: any) {
+      if (error.code === 'P2002') throw new Error('INEP já cadastrado para outra escola.');
+      throw new Error(error.message);
+    }
+  });
+
   ipcMain.handle('turma:listar', async () => {
     return await prisma.turma.findMany({
       include: {
@@ -94,6 +97,43 @@ function setupIpcHandlers() {
         escola: true,
       }
     });
+  });
+
+  ipcMain.handle('serie:criar', async (_, data) => {
+    try {
+      const { nome, escolaId, horarioInicio, toleranciaMinutos, limiteEntrada, aplicarTodasTurmas } = data;
+      return await prisma.serie.create({
+        data: {
+          nome,
+          escolaId,
+          horarioInicio,
+          toleranciaMinutos: Number(toleranciaMinutos),
+          limiteEntrada,
+          aplicarTodasTurmas: aplicarTodasTurmas ?? true,
+        },
+      });
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  });
+
+  ipcMain.handle('turma:criar', async (_, data) => {
+    try {
+      const { nome, serieId, escolaId, sobrescreverRegras, horarioInicio, toleranciaMinutos, limiteEntrada } = data;
+      return await prisma.turma.create({
+        data: {
+          nome,
+          serieId,
+          escolaId,
+          sobrescreverRegras: sobrescreverRegras ?? false,
+          horarioInicio: horarioInicio || null,
+          toleranciaMinutos: toleranciaMinutos != null ? Number(toleranciaMinutos) : null,
+          limiteEntrada: limiteEntrada || null,
+        },
+      });
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
   });
 
   ipcMain.handle('aluno:criar', async (_, data) => {
@@ -118,6 +158,97 @@ function setupIpcHandlers() {
 
   ipcMain.handle('diretor:listar', async () => {
     return await prisma.diretor.findMany({ include: { usuario: true, escola: true } });
+  });
+
+  // ── DIRETOR: criar ──────────────────────────────────────────────────────────
+  ipcMain.handle('diretor:criar', async (_, data) => {
+    try {
+      const { nome, email, cpf, escolaId } = data;
+      const senhaHash = cpf.replace(/\D/g, '').slice(0, 6);
+
+      return await prisma.$transaction(async (tx) => {
+        const usuario = await tx.usuario.create({
+          data: { nome, email, cpf, senhaHash, papel: 'DIRETOR', primeiroAcesso: true },
+        });
+        const diretor = await tx.diretor.create({
+          data: { usuarioId: usuario.id, escolaId },
+        });
+        return { success: true, usuario, diretor };
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        return { success: false, error: 'CPF ou Email já cadastrado no sistema.' };
+      }
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ── PROFESSOR: criar ─────────────────────────────────────────────────────────
+  ipcMain.handle('professor:criar', async (_, data) => {
+    try {
+      const { nome, email, cpf } = data;
+      const senhaHash = cpf.replace(/\D/g, '').slice(0, 6);
+
+      return await prisma.$transaction(async (tx) => {
+        const usuario = await tx.usuario.create({
+          data: { nome, email, cpf, senhaHash, papel: 'PROFESSOR', primeiroAcesso: true },
+        });
+        const professor = await tx.professor.create({
+          data: { usuarioId: usuario.id },
+        });
+        return { success: true, usuario, professor };
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        return { success: false, error: 'CPF ou Email já cadastrado no sistema.' };
+      }
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ── RESPONSAVEL: criar ───────────────────────────────────────────────────────
+  ipcMain.handle('responsavel:criar', async (_, data) => {
+    try {
+      const { nome, email, cpf, telefone } = data;
+      const senhaHash = cpf.replace(/\D/g, '').slice(0, 6);
+
+      return await prisma.$transaction(async (tx) => {
+        const usuario = await tx.usuario.create({
+          data: { nome, email, cpf, senhaHash, papel: 'RESPONSAVEL', primeiroAcesso: true },
+        });
+        const responsavel = await tx.responsavel.create({
+          data: { usuarioId: usuario.id, telefone },
+        });
+        return { success: true, usuario, responsavel };
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        return { success: false, error: 'CPF ou Email já cadastrado no sistema.' };
+      }
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ── SECRETARIA: listar e criar ───────────────────────────────────────────────
+  ipcMain.handle('secretaria:listar', async () => {
+    return await prisma.usuario.findMany({ where: { papel: 'SECRETARIA' } });
+  });
+
+  ipcMain.handle('secretaria:criar', async (_, data) => {
+    try {
+      const { nome, email, cpf } = data;
+      const senhaHash = cpf.replace(/\D/g, '').slice(0, 6);
+
+      const usuario = await prisma.usuario.create({
+        data: { nome, email, cpf, senhaHash, papel: 'SECRETARIA', primeiroAcesso: true },
+      });
+      return { success: true, usuario };
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        return { success: false, error: 'CPF ou Email já cadastrado no sistema.' };
+      }
+      return { success: false, error: error.message };
+    }
   });
 
   ipcMain.handle('frequencia:listar', async () => {

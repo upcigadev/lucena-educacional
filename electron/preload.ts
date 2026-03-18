@@ -2,41 +2,53 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
   usuario: {
-    login: (credentials: any) => ipcRenderer.invoke('usuario:login', credentials)
+    login: (credentials: any) => ipcRenderer.invoke('usuario:login', credentials),
   },
   escola: {
-    listar: () => ipcRenderer.invoke('escola:listar')
+    listar: () => ipcRenderer.invoke('escola:listar'),
+    criar: (d: any) => ipcRenderer.invoke('escola:criar', d),
   },
   turma: {
-    listar: () => ipcRenderer.invoke('turma:listar')
+    listar: () => ipcRenderer.invoke('turma:listar'),
+    criar: (d: any) => ipcRenderer.invoke('turma:criar', d),
   },
   serie: {
-    listar: () => ipcRenderer.invoke('serie:listar')
+    listar: () => ipcRenderer.invoke('serie:listar'),
+    criar: (d: any) => ipcRenderer.invoke('serie:criar', d),
   },
   aluno: {
-    criar: (data: any) => ipcRenderer.invoke('aluno:criar', data),
-    listar: () => ipcRenderer.invoke('aluno:listar')
-  },
-  professor: {
-    listar: () => ipcRenderer.invoke('professor:listar')
-  },
-  justificativa: {
-    listar: () => ipcRenderer.invoke('justificativa:listar')
-  },
-  responsavel: {
-    listar: () => ipcRenderer.invoke('responsavel:listar')
+    listar: () => ipcRenderer.invoke('aluno:listar'),
+    criar: (d: any) => ipcRenderer.invoke('aluno:criar', d),
   },
   diretor: {
-    listar: () => ipcRenderer.invoke('diretor:listar')
+    listar: () => ipcRenderer.invoke('diretor:listar'),
+    criar: (d: any) => ipcRenderer.invoke('diretor:criar', d),
+  },
+  professor: {
+    listar: () => ipcRenderer.invoke('professor:listar'),
+    criar: (d: any) => ipcRenderer.invoke('professor:criar', d),
+  },
+  responsavel: {
+    listar: () => ipcRenderer.invoke('responsavel:listar'),
+    criar: (d: any) => ipcRenderer.invoke('responsavel:criar', d),
+  },
+  secretaria: {
+    listar: () => ipcRenderer.invoke('secretaria:listar'),
+    criar: (d: any) => ipcRenderer.invoke('secretaria:criar', d),
+  },
+  justificativa: {
+    listar: () => ipcRenderer.invoke('justificativa:listar'),
   },
   frequencia: {
-    registrarPassagem: (idEquipamento: number) => ipcRenderer.invoke('frequencia:registrarPassagem', idEquipamento),
-    listar: () => ipcRenderer.invoke('frequencia:listar')
+    listar: () => ipcRenderer.invoke('frequencia:listar'),
+    registrarPassagem: (idEquipamento: number) =>
+      ipcRenderer.invoke('frequencia:registrarPassagem', idEquipamento),
   },
   hardware: {
-    iniciarCadastroBiometrico: (alunoId: string, ipiDFace: string) => ipcRenderer.invoke('hardware:iniciarCadastroBiometrico', alunoId, ipiDFace)
+    iniciarCadastroBiometrico: (alunoId: string, ipiDFace: string) =>
+      ipcRenderer.invoke('hardware:iniciarCadastroBiometrico', alunoId, ipiDFace),
   },
   onNovaFrequencia: (callback: (data: any) => void) => {
     ipcRenderer.on('nova-frequencia-registada', (_event, value) => callback(value));
-  }
+  },
 });
