@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { escolas, alunos, turmas, series, justificativas, gerarFrequencia } from '@/data/mockData';
 import { ReportFilters, useDefaultFilters } from '@/components/ReportFilters';
 import { exportarPdf } from '@/lib/pdfExport';
@@ -7,7 +7,6 @@ import { FileDown, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend, ReferenceLine } from 'recharts';
 
-// Diretor gerencia escola id=1 (mock)
 const ESCOLA_ID = '1';
 
 function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
@@ -27,6 +26,9 @@ export default function RelatoriosDiretor() {
   const [filters, setFilters] = useDefaultFilters();
   const escola = escolas.find(e => e.id === ESCOLA_ID)!;
 
+  const chartEvolucaoRef = useRef<HTMLDivElement>(null);
+  const chartFaltasRef = useRef<HTMLDivElement>(null);
+
   const alunosFiltrados = useMemo(() => {
     let lista = alunos.filter(a => a.escolaId === ESCOLA_ID);
     if (filters.turmaId) lista = lista.filter(a => a.turmaId === filters.turmaId);
@@ -39,7 +41,6 @@ export default function RelatoriosDiretor() {
 
   const justFiltradas = useMemo(() => justificativas.filter(j => j.escolaId === ESCOLA_ID), []);
 
-  // Frequência geral com evolução
   const freqGeral = useMemo(() => {
     const meses = [{ key: '2026-02', label: 'Fev/2026' }, { key: '2026-03', label: 'Mar/2026' }];
     return meses.map(m => {
@@ -55,10 +56,8 @@ export default function RelatoriosDiretor() {
     });
   }, []);
 
-  // Alunos abaixo de 75%
   const alunosBaixaFreq = useMemo(() => alunosFiltrados.filter(a => a.frequenciaEntrada < 75), [alunosFiltrados]);
 
-  // Faltas justificadas vs não
   const faltasResumo = useMemo(() => {
     const alunosEsc = alunos.filter(a => a.escolaId === ESCOLA_ID);
     let justificadas = 0, naoJust = 0;
@@ -72,10 +71,8 @@ export default function RelatoriosDiretor() {
     return { justificadas, naoJustificadas: naoJust };
   }, []);
 
-  // Justificativas pendentes
   const justPendentes = useMemo(() => justFiltradas.filter(j => j.status === 'pendente'), [justFiltradas]);
 
-  // Lista alunos por turma
   const alunosPorTurma = useMemo(() => {
     const turmasEsc = turmas.filter(t => t.escolaId === ESCOLA_ID);
     return turmasEsc.map(t => ({
@@ -105,7 +102,6 @@ export default function RelatoriosDiretor() {
           <TabsTrigger value="turmas" className="text-xs">Alunos por Turma</TabsTrigger>
         </TabsList>
 
-        {/* Evolução mensal */}
         <TabsContent value="evolucao">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Frequência Geral — Evolução Mensal</h2>
@@ -115,10 +111,10 @@ export default function RelatoriosDiretor() {
               periodo,
               colunas: ['Mês', 'Frequência (%)'],
               linhas: freqGeral.map(f => [f.mes, `${f.frequencia}%`]),
+              chartElement: chartEvolucaoRef.current,
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
-          {/* Line chart */}
-          <div className="bg-card rounded-lg border p-4 mb-4">
+          <div ref={chartEvolucaoRef} className="bg-card rounded-lg border p-4 mb-4">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={freqGeral} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -140,7 +136,6 @@ export default function RelatoriosDiretor() {
           </div>
         </TabsContent>
 
-        {/* Alunos abaixo de 75% */}
         <TabsContent value="baixa">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Alunos com Frequência Abaixo de 75%</h2>
@@ -178,7 +173,6 @@ export default function RelatoriosDiretor() {
           )}
         </TabsContent>
 
-        {/* Faltas */}
         <TabsContent value="faltas">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Faltas Justificadas vs Não Justificadas</h2>
@@ -188,10 +182,10 @@ export default function RelatoriosDiretor() {
               periodo,
               colunas: ['Tipo', 'Quantidade'],
               linhas: [['Justificadas', faltasResumo.justificadas], ['Não Justificadas', faltasResumo.naoJustificadas], ['Total', faltasResumo.justificadas + faltasResumo.naoJustificadas]],
+              chartElement: chartFaltasRef.current,
             })}><FileDown className="h-4 w-4 mr-1" />Exportar PDF</Button>
           </div>
-          {/* Bar chart */}
-          <div className="bg-card rounded-lg border p-4 mb-4">
+          <div ref={chartFaltasRef} className="bg-card rounded-lg border p-4 mb-4">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={[
                 { tipo: 'Justificadas', quantidade: faltasResumo.justificadas },
@@ -224,7 +218,6 @@ export default function RelatoriosDiretor() {
           </div>
         </TabsContent>
 
-        {/* Justificativas pendentes */}
         <TabsContent value="pendentes">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Justificativas Pendentes de Análise</h2>
@@ -262,7 +255,6 @@ export default function RelatoriosDiretor() {
           )}
         </TabsContent>
 
-        {/* Alunos por turma */}
         <TabsContent value="turmas">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Lista de Alunos por Turma</h2>
