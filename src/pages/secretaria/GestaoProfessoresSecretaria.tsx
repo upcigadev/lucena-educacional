@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { professores as professoresData, escolas } from '@/data/mockData';
+
 import { toast } from 'sonner';
 import { formatCpf, validateCpf } from '@/lib/masks';
 import { X } from 'lucide-react';
