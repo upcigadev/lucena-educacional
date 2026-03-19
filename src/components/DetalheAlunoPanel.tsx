@@ -32,6 +32,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   const [escolas, setEscolas] = useState<any[]>([]);
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
   const [vinculos, setVinculos] = useState<any[]>([]);
+  const [historico, setHistorico] = useState<any[]>([]);
 
   const [turmaId, setTurmaId] = useState('');
   const [vincularModalOpen, setVincularModalOpen] = useState(false);
