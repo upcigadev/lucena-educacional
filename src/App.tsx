@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth, type PerfilUsuario } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -59,7 +59,7 @@ import RelatoriosSecretaria from "./pages/secretaria/RelatoriosSecretaria";
 
 const queryClient = new QueryClient();
 
-function ProtectedLayout({ children }: { children: React.ReactNode }) {
+function ProtectedLayout({ children, allowedPerfis }: { children: React.ReactNode; allowedPerfis?: PerfilUsuario[] }) {
   const { perfil, loading } = useAuth();
 
   if (loading) {
@@ -71,6 +71,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!perfil) return <Navigate to="/login" replace />;
+  if (allowedPerfis && !allowedPerfis.includes(perfil)) return <Navigate to={`/${perfil}`} replace />;
   return <AppLayout>{children}</AppLayout>;
 }
 
@@ -95,50 +96,50 @@ function AppRoutes() {
       } />
 
       {/* Responsável */}
-      <Route path="/responsavel" element={<ProtectedLayout><PainelDependentes /></ProtectedLayout>} />
-      <Route path="/responsavel/filho/:id" element={<ProtectedLayout><DetalheFilho /></ProtectedLayout>} />
-      <Route path="/responsavel/notificacoes" element={<ProtectedLayout><NotificacoesResponsavel /></ProtectedLayout>} />
-      <Route path="/responsavel/justificativas" element={<ProtectedLayout><JustificativasResponsavel /></ProtectedLayout>} />
-      <Route path="/responsavel/meus-dados" element={<ProtectedLayout><MeusDadosResponsavel /></ProtectedLayout>} />
+      <Route path="/responsavel" element={<ProtectedLayout allowedPerfis={['responsavel']}><PainelDependentes /></ProtectedLayout>} />
+      <Route path="/responsavel/filho/:id" element={<ProtectedLayout allowedPerfis={['responsavel']}><DetalheFilho /></ProtectedLayout>} />
+      <Route path="/responsavel/notificacoes" element={<ProtectedLayout allowedPerfis={['responsavel']}><NotificacoesResponsavel /></ProtectedLayout>} />
+      <Route path="/responsavel/justificativas" element={<ProtectedLayout allowedPerfis={['responsavel']}><JustificativasResponsavel /></ProtectedLayout>} />
+      <Route path="/responsavel/meus-dados" element={<ProtectedLayout allowedPerfis={['responsavel']}><MeusDadosResponsavel /></ProtectedLayout>} />
 
       {/* Professor */}
-      <Route path="/professor" element={<ProtectedLayout><PainelEscolasProfessor /></ProtectedLayout>} />
-      <Route path="/professor/escola/:escolaId" element={<ProtectedLayout><TurmasEscola /></ProtectedLayout>} />
-      <Route path="/professor/escola/:escolaId/turma/:turmaId" element={<ProtectedLayout><FrequenciaTurma /></ProtectedLayout>} />
-      <Route path="/professor/alunos" element={<ProtectedLayout><ListaAlunos /></ProtectedLayout>} />
-      <Route path="/professor/aluno/:id" element={<ProtectedLayout><DetalheAlunoProfessor /></ProtectedLayout>} />
-      <Route path="/professor/meus-dados" element={<ProtectedLayout><MeusDadosProfessor /></ProtectedLayout>} />
-      <Route path="/professor/relatorios" element={<ProtectedLayout><RelatoriosProfessor /></ProtectedLayout>} />
+      <Route path="/professor" element={<ProtectedLayout allowedPerfis={['professor']}><PainelEscolasProfessor /></ProtectedLayout>} />
+      <Route path="/professor/escola/:escolaId" element={<ProtectedLayout allowedPerfis={['professor']}><TurmasEscola /></ProtectedLayout>} />
+      <Route path="/professor/escola/:escolaId/turma/:turmaId" element={<ProtectedLayout allowedPerfis={['professor']}><FrequenciaTurma /></ProtectedLayout>} />
+      <Route path="/professor/alunos" element={<ProtectedLayout allowedPerfis={['professor']}><ListaAlunos /></ProtectedLayout>} />
+      <Route path="/professor/aluno/:id" element={<ProtectedLayout allowedPerfis={['professor']}><DetalheAlunoProfessor /></ProtectedLayout>} />
+      <Route path="/professor/meus-dados" element={<ProtectedLayout allowedPerfis={['professor']}><MeusDadosProfessor /></ProtectedLayout>} />
+      <Route path="/professor/relatorios" element={<ProtectedLayout allowedPerfis={['professor']}><RelatoriosProfessor /></ProtectedLayout>} />
 
       {/* Diretor */}
-      <Route path="/diretor" element={<ProtectedLayout><PainelEscolaDiretor /></ProtectedLayout>} />
-      <Route path="/diretor/escola/:escolaId" element={<ProtectedLayout><PainelEscolaDiretor /></ProtectedLayout>} />
-      <Route path="/diretor/serie/:serieId" element={<ProtectedLayout><TurmasSerie /></ProtectedLayout>} />
-      <Route path="/diretor/turma/:turmaId" element={<ProtectedLayout><DetalheTurma /></ProtectedLayout>} />
-      <Route path="/diretor/justificativas" element={<ProtectedLayout><JustificativasDiretor /></ProtectedLayout>} />
-      <Route path="/diretor/alunos" element={<ProtectedLayout><GestaoAlunosDiretor /></ProtectedLayout>} />
-      <Route path="/diretor/aluno/:id" element={<ProtectedLayout><DetalheAlunoDiretor /></ProtectedLayout>} />
-      <Route path="/diretor/novo-aluno" element={<ProtectedLayout><NovoAluno /></ProtectedLayout>} />
-      <Route path="/diretor/turmas" element={<ProtectedLayout><GestaoTurmas /></ProtectedLayout>} />
-      <Route path="/diretor/professores" element={<ProtectedLayout><ProfessoresDiretor /></ProtectedLayout>} />
-      <Route path="/diretor/responsaveis" element={<ProtectedLayout><ResponsaveisDiretor /></ProtectedLayout>} />
-      <Route path="/diretor/configuracoes" element={<ProtectedLayout><ConfiguracoesEscola /></ProtectedLayout>} />
-      <Route path="/diretor/meus-dados" element={<ProtectedLayout><MeusDadosDiretor /></ProtectedLayout>} />
-      <Route path="/diretor/relatorios" element={<ProtectedLayout><RelatoriosDiretor /></ProtectedLayout>} />
+      <Route path="/diretor" element={<ProtectedLayout allowedPerfis={['diretor']}><PainelEscolaDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/escola/:escolaId" element={<ProtectedLayout allowedPerfis={['diretor']}><PainelEscolaDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/serie/:serieId" element={<ProtectedLayout allowedPerfis={['diretor']}><TurmasSerie /></ProtectedLayout>} />
+      <Route path="/diretor/turma/:turmaId" element={<ProtectedLayout allowedPerfis={['diretor']}><DetalheTurma /></ProtectedLayout>} />
+      <Route path="/diretor/justificativas" element={<ProtectedLayout allowedPerfis={['diretor']}><JustificativasDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/alunos" element={<ProtectedLayout allowedPerfis={['diretor']}><GestaoAlunosDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/aluno/:id" element={<ProtectedLayout allowedPerfis={['diretor']}><DetalheAlunoDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/novo-aluno" element={<ProtectedLayout allowedPerfis={['diretor']}><NovoAluno /></ProtectedLayout>} />
+      <Route path="/diretor/turmas" element={<ProtectedLayout allowedPerfis={['diretor']}><GestaoTurmas /></ProtectedLayout>} />
+      <Route path="/diretor/professores" element={<ProtectedLayout allowedPerfis={['diretor']}><ProfessoresDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/responsaveis" element={<ProtectedLayout allowedPerfis={['diretor']}><ResponsaveisDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/configuracoes" element={<ProtectedLayout allowedPerfis={['diretor']}><ConfiguracoesEscola /></ProtectedLayout>} />
+      <Route path="/diretor/meus-dados" element={<ProtectedLayout allowedPerfis={['diretor']}><MeusDadosDiretor /></ProtectedLayout>} />
+      <Route path="/diretor/relatorios" element={<ProtectedLayout allowedPerfis={['diretor']}><RelatoriosDiretor /></ProtectedLayout>} />
 
       {/* Secretaria */}
-      <Route path="/secretaria" element={<ProtectedLayout><PainelEscolasSecretaria /></ProtectedLayout>} />
-      <Route path="/secretaria/escola/:escolaId" element={<ProtectedLayout><EscolaDetalheSecretaria /></ProtectedLayout>} />
-      <Route path="/secretaria/escola/:escolaId/serie/:serieId" element={<ProtectedLayout><TurmasSerieSecretaria /></ProtectedLayout>} />
-      <Route path="/secretaria/escola/:escolaId/turma/:turmaId" element={<ProtectedLayout><DetalheTurmaSecretaria /></ProtectedLayout>} />
-      <Route path="/secretaria/diretores" element={<ProtectedLayout><GestaoDiretores /></ProtectedLayout>} />
-      <Route path="/secretaria/professores" element={<ProtectedLayout><GestaoProfessoresSecretaria /></ProtectedLayout>} />
-      <Route path="/secretaria/responsaveis" element={<ProtectedLayout><GestaoResponsaveis /></ProtectedLayout>} />
-      <Route path="/secretaria/alunos" element={<ProtectedLayout><GestaoAlunosSecretaria /></ProtectedLayout>} />
-      <Route path="/secretaria/novo-aluno" element={<ProtectedLayout><NovoAlunoSecretaria /></ProtectedLayout>} />
-      <Route path="/secretaria/justificativas" element={<ProtectedLayout><JustificativasGlobais /></ProtectedLayout>} />
-      <Route path="/secretaria/aluno/:id" element={<ProtectedLayout><DetalheAlunoSecretaria /></ProtectedLayout>} />
-      <Route path="/secretaria/relatorios" element={<ProtectedLayout><RelatoriosSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria" element={<ProtectedLayout allowedPerfis={['secretaria']}><PainelEscolasSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria/escola/:escolaId" element={<ProtectedLayout allowedPerfis={['secretaria']}><EscolaDetalheSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria/escola/:escolaId/serie/:serieId" element={<ProtectedLayout allowedPerfis={['secretaria']}><TurmasSerieSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria/escola/:escolaId/turma/:turmaId" element={<ProtectedLayout allowedPerfis={['secretaria']}><DetalheTurmaSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria/diretores" element={<ProtectedLayout allowedPerfis={['secretaria']}><GestaoDiretores /></ProtectedLayout>} />
+      <Route path="/secretaria/professores" element={<ProtectedLayout allowedPerfis={['secretaria']}><GestaoProfessoresSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria/responsaveis" element={<ProtectedLayout allowedPerfis={['secretaria']}><GestaoResponsaveis /></ProtectedLayout>} />
+      <Route path="/secretaria/alunos" element={<ProtectedLayout allowedPerfis={['secretaria']}><GestaoAlunosSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria/novo-aluno" element={<ProtectedLayout allowedPerfis={['secretaria']}><NovoAlunoSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria/justificativas" element={<ProtectedLayout allowedPerfis={['secretaria']}><JustificativasGlobais /></ProtectedLayout>} />
+      <Route path="/secretaria/aluno/:id" element={<ProtectedLayout allowedPerfis={['secretaria']}><DetalheAlunoSecretaria /></ProtectedLayout>} />
+      <Route path="/secretaria/relatorios" element={<ProtectedLayout allowedPerfis={['secretaria']}><RelatoriosSecretaria /></ProtectedLayout>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
