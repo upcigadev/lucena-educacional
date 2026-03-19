@@ -75,6 +75,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
     setEscolas(escolasRes.data || []);
     setResponsaveis(respsRes.data || []);
     setVinculos(vinculosRes.data || []);
+    setHistorico(historicoRes.data || []);
   }, [alunoId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
