@@ -38,6 +38,10 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   const [modalAviso, setModalAviso] = useState(false);
   const [aviso, setAviso] = useState('');
 
+  // Edição de parentesco inline
+  const [editandoVinculoId, setEditandoVinculoId] = useState<string | null>(null);
+  const [parentescoEdit, setParentescoEdit] = useState('');
+
   const fetchData = useCallback(async () => {
     if (!alunoId) return;
 
