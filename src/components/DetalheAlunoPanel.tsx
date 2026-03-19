@@ -428,6 +428,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                         <th className="text-left p-3 text-sm font-medium">Série</th>
                         <th className="text-left p-3 text-sm font-medium">Início</th>
                         <th className="text-left p-3 text-sm font-medium">Fim</th>
+                        <th className="text-left p-3 text-sm font-medium">Observação</th>
                         <th className="text-left p-3 text-sm font-medium">Status</th>
                       </tr>
                     </thead>
