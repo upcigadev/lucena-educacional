@@ -60,6 +60,7 @@ export type Database = {
           data_fim: string | null
           data_inicio: string
           id: string
+          observacao: string | null
           serie_nome: string | null
           turma_id: string | null
           turma_nome: string
@@ -70,6 +71,7 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string
           id?: string
+          observacao?: string | null
           serie_nome?: string | null
           turma_id?: string | null
           turma_nome: string
@@ -80,6 +82,7 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string
           id?: string
+          observacao?: string | null
           serie_nome?: string | null
           turma_id?: string | null
           turma_nome?: string

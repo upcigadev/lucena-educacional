@@ -1,0 +1,1 @@
+ALTER TABLE public.aluno_turma_historico ADD COLUMN observacao text;
