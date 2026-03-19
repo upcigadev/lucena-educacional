@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { formatCpf, validateCpf } from '@/lib/masks';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Plus, Phone } from 'lucide-react';
+import { Users, Plus, Phone, ArrowLeft, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,11 +26,19 @@ export default function GestaoResponsaveis() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
+  const [alunos, setAlunos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Detail view
+  const [detalheId, setDetalheId] = useState<string | null>(null);
+
   const fetchData = async () => {
-    const { data } = await supabase.from('responsaveis').select('*, usuario:usuarios(*)');
-    setResponsaveis(data || []);
+    const [{ data: resps }, { data: alunosData }] = await Promise.all([
+      supabase.from('responsaveis').select('*, usuario:usuarios(*)'),
+      supabase.from('alunos').select('*, turma:turmas(nome, serie:series(nome))'),
+    ]);
+    setResponsaveis(resps || []);
+    setAlunos(alunosData || []);
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -42,6 +50,9 @@ export default function GestaoResponsaveis() {
       return true;
     });
   }, [filtroNome, responsaveis]);
+
+  const detalheResp = useMemo(() => detalheId ? responsaveis.find(r => r.id === detalheId) : null, [detalheId, responsaveis]);
+  const alunosDoResp = useMemo(() => detalheId ? alunos.filter(a => a.responsavel_id === detalheId) : [], [detalheId, alunos]);
 
   const handleEnviar = () => {
     toast.success('Aviso enviado ao responsável com sucesso!');
@@ -70,7 +81,6 @@ export default function GestaoResponsaveis() {
     });
     if (rErr) { toast.error('Erro ao criar responsável: ' + rErr.message); setLoading(false); return; }
 
-    // Create auth credentials
     const { data: authResult, error: authErr } = await supabase.functions.invoke('create-user', {
       body: { usuario_id: usuario.id, email: email.trim(), password: senha },
     });
@@ -89,6 +99,65 @@ export default function GestaoResponsaveis() {
     setNome(''); setCpf(''); setTelefone(''); setEmail(''); setSenha('');
     setShowModal(true);
   };
+
+  // Detail view
+  if (detalheResp) {
+    return (
+      <div>
+        <button onClick={() => setDetalheId(null)} className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-4">
+          <ArrowLeft className="w-4 h-4" /> Voltar para Responsáveis
+        </button>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">{detalheResp.usuario?.nome}</h1>
+            <p className="text-sm text-muted-foreground">
+              CPF: {detalheResp.usuario?.cpf} · Tel: {detalheResp.telefone || 'ND'} · E-mail: {detalheResp.usuario?.email || 'ND'}
+            </p>
+          </div>
+        </div>
+
+        <h2 className="text-lg font-semibold text-foreground mb-3">Alunos Associados ({alunosDoResp.length})</h2>
+        {alunosDoResp.length === 0 ? (
+          <div className="bg-card rounded-lg border p-8 text-center">
+            <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">Nenhum aluno vinculado a este responsável.</p>
+          </div>
+        ) : (
+          <div className="bg-card rounded-lg border overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-secondary">
+                  <th className="text-left p-3 text-sm font-medium">Nome</th>
+                  <th className="text-left p-3 text-sm font-medium">Matrícula</th>
+                  <th className="text-left p-3 text-sm font-medium">Série / Turma</th>
+                  <th className="text-left p-3 text-sm font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {alunosDoResp.map(a => (
+                  <tr key={a.id} className="border-b">
+                    <td className="p-3 text-sm font-medium">{a.nome_completo}</td>
+                    <td className="p-3 text-sm">{a.matricula}</td>
+                    <td className="p-3 text-sm">
+                      {a.turma ? `${a.turma.serie?.nome || ''} – ${a.turma.nome}` : 'Sem turma'}
+                    </td>
+                    <td className="p-3 text-sm">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${a.ativo ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
+                        {a.ativo ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -120,18 +189,21 @@ export default function GestaoResponsaveis() {
                 <th className="text-left p-3 text-sm font-medium">CPF</th>
                 <th className="text-left p-3 text-sm font-medium">E-mail</th>
                 <th className="text-left p-3 text-sm font-medium">Telefone</th>
+                <th className="text-left p-3 text-sm font-medium">Dependentes</th>
                 <th className="text-left p-3 text-sm font-medium">Ações</th>
               </tr></thead>
               <tbody>
                 {filtered.map(r => {
                   const nomeR = r.usuario?.nome || 'Desconhecido';
+                  const qtdAlunos = alunos.filter(a => a.responsavel_id === r.id).length;
                   return (
-                    <tr key={r.id} className="border-b">
-                      <td className="p-3 text-sm font-medium">{nomeR}</td>
+                    <tr key={r.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setDetalheId(r.id)}>
+                      <td className="p-3 text-sm font-medium text-primary hover:underline">{nomeR}</td>
                       <td className="p-3 text-sm">{r.usuario?.cpf || 'ND'}</td>
                       <td className="p-3 text-sm">{r.usuario?.email || 'ND'}</td>
                       <td className="p-3 text-sm">{r.telefone || 'ND'}</td>
-                      <td className="p-3 flex gap-1">
+                      <td className="p-3 text-sm">{qtdAlunos} aluno(s)</td>
+                      <td className="p-3 flex gap-1" onClick={e => e.stopPropagation()}>
                         <Button variant="secondary" size="sm" onClick={() => toast.info('Edição em desenvolvimento')}>Editar</Button>
                         <Button size="sm" onClick={() => { setResponsavelSelecionado(nomeR); setNotifOpen(true); }}>Notificar</Button>
                       </td>
