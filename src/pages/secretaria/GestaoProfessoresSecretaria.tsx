@@ -43,7 +43,7 @@ export default function GestaoProfessoresSecretaria() {
   const filtered = lista.filter(p => !filtroNome || p.usuario?.nome?.toLowerCase().includes(filtroNome.toLowerCase()));
 
   const resetForm = () => {
-    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinas(''); setEscolasSel([]);
+    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinasSel([]); setEscolasSel([]);
     setShowModal(false); setEditId(null);
   };
 
