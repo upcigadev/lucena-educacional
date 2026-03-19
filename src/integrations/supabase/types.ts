@@ -14,7 +14,178 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      diretores: {
+        Row: {
+          escola_id: string
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          escola_id: string
+          id?: string
+          usuario_id: string
+        }
+        Update: {
+          escola_id?: string
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diretores_escola_id_fkey"
+            columns: ["escola_id"]
+            isOneToOne: false
+            referencedRelation: "escolas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diretores_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: true
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escolas: {
+        Row: {
+          created_at: string
+          endereco: string | null
+          id: string
+          inep: string | null
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          inep?: string | null
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          inep?: string | null
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: []
+      }
+      professor_escolas: {
+        Row: {
+          escola_id: string
+          id: string
+          professor_id: string
+        }
+        Insert: {
+          escola_id: string
+          id?: string
+          professor_id: string
+        }
+        Update: {
+          escola_id?: string
+          id?: string
+          professor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_escolas_escola_id_fkey"
+            columns: ["escola_id"]
+            isOneToOne: false
+            referencedRelation: "escolas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professor_escolas_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "professores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professores: {
+        Row: {
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          id?: string
+          usuario_id: string
+        }
+        Update: {
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professores_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: true
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      responsaveis: {
+        Row: {
+          id: string
+          telefone: string | null
+          usuario_id: string
+        }
+        Insert: {
+          id?: string
+          telefone?: string | null
+          usuario_id: string
+        }
+        Update: {
+          id?: string
+          telefone?: string | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "responsaveis_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: true
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usuarios: {
+        Row: {
+          ativo: boolean
+          cpf: string
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          papel: string
+        }
+        Insert: {
+          ativo?: boolean
+          cpf: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          papel: string
+        }
+        Update: {
+          ativo?: boolean
+          cpf?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          papel?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

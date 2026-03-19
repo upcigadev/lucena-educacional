@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { formatCpf, validateCpf } from '@/lib/masks';
+import { supabase } from '@/integrations/supabase/client';
 import { Users, Plus, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,44 +16,27 @@ import {
 
 export default function GestaoResponsaveis() {
   const [filtroNome, setFiltroNome] = useState('');
-  const [filtroEscola, setFiltroEscola] = useState('');
-  const [filtroSerie, setFiltroSerie] = useState('');
-  const [filtroTurma, setFiltroTurma] = useState('');
-
-  // Notification modal
   const [notifOpen, setNotifOpen] = useState(false);
   const [aviso, setAviso] = useState('');
   const [responsavelSelecionado, setResponsavelSelecionado] = useState('');
-
-  // Creation modal
   const [showModal, setShowModal] = useState(false);
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
-
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
-  const [escolas, setEscolas] = useState<any[]>([]);
-  const [series, setSeries] = useState<any[]>([]);
-  const [turmas, setTurmas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      window.api?.responsavel?.listar?.() || Promise.resolve([]),
-      window.api?.escola?.listar?.() || Promise.resolve([]),
-      window.api?.serie?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([])
-    ]).then(([r, e, s, t]) => {
-      setResponsaveis(r); setEscolas(e); setSeries(s); setTurmas(t);
-    });
-  }, []);
+  const fetchData = async () => {
+    const { data } = await supabase.from('responsaveis').select('*, usuario:usuarios(*)');
+    setResponsaveis(data || []);
+  };
 
-  const seriesFiltradas = useMemo(() => filtroEscola ? series.filter(s => s.escolaId === filtroEscola) : [], [filtroEscola, series]);
-  const turmasFiltradas = useMemo(() => filtroSerie ? turmas.filter(t => t.serieId === filtroSerie) : [], [filtroSerie, turmas]);
+  useEffect(() => { fetchData(); }, []);
 
   const filtered = useMemo(() => {
     return responsaveis.filter(r => {
-      const nomeR = r.usuario?.nome || 'Desconhecido';
+      const nomeR = r.usuario?.nome || '';
       if (filtroNome && !nomeR.toLowerCase().includes(filtroNome.toLowerCase())) return false;
       return true;
     });
@@ -60,9 +44,7 @@ export default function GestaoResponsaveis() {
 
   const handleEnviar = () => {
     toast.success('Aviso enviado ao responsável com sucesso!');
-    setNotifOpen(false);
-    setAviso('');
-    setResponsavelSelecionado('');
+    setNotifOpen(false); setAviso(''); setResponsavelSelecionado('');
   };
 
   const resetCreationForm = () => {
@@ -70,11 +52,25 @@ export default function GestaoResponsaveis() {
     setShowModal(false);
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateCpf(cpf)) { toast.error('CPF inválido. Verifique os dígitos.'); return; }
+    setLoading(true);
+
+    const { data: usuario, error: uErr } = await supabase.from('usuarios').insert({
+      nome, cpf, papel: 'RESPONSAVEL', email: email.trim() || `${cpf.replace(/\D/g, '')}@responsavel.local`,
+    }).select().single();
+    if (uErr) { toast.error('Erro ao criar usuário: ' + uErr.message); setLoading(false); return; }
+
+    const { error: rErr } = await supabase.from('responsaveis').insert({
+      usuario_id: usuario.id, telefone: telefone.trim() || null,
+    });
+    if (rErr) { toast.error('Erro ao criar responsável: ' + rErr.message); setLoading(false); return; }
+
     toast.success(`Responsável "${nome}" cadastrado com sucesso!`);
+    setLoading(false);
     resetCreationForm();
+    fetchData();
   };
 
   const openNew = () => {
@@ -87,10 +83,7 @@ export default function GestaoResponsaveis() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">Gestão de Responsáveis</h1>
         {responsaveis.length > 0 && (
-          <Button onClick={openNew}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Responsável
-          </Button>
+          <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Novo Responsável</Button>
         )}
       </div>
 
@@ -102,56 +95,28 @@ export default function GestaoResponsaveis() {
             </div>
             <h2 className="text-lg font-semibold text-card-foreground mb-2">Nenhum responsável cadastrado</h2>
             <p className="text-sm text-muted-foreground mb-6">Cadastre o primeiro responsável para vinculá-lo aos alunos do município.</p>
-            <Button size="lg" onClick={openNew}>
-              <Plus className="w-4 h-4 mr-2" />
-              Cadastrar Primeiro Responsável
-            </Button>
+            <Button size="lg" onClick={openNew}><Plus className="w-4 h-4 mr-2" />Cadastrar Primeiro Responsável</Button>
           </div>
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-3 mb-4">
-            <Input type="text" placeholder="Buscar por nome..." value={filtroNome} onChange={e => setFiltroNome(e.target.value)} className="w-64" />
-            <select value={filtroEscola} onChange={e => { setFiltroEscola(e.target.value); setFiltroSerie(''); setFiltroTurma(''); }}
-              className="px-3 py-2 border rounded-md bg-background text-sm">
-              <option value="">Todas as escolas</option>
-              {escolas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
-            </select>
-            {filtroEscola && (
-              <select value={filtroSerie} onChange={e => { setFiltroSerie(e.target.value); setFiltroTurma(''); }}
-                className="px-3 py-2 border rounded-md bg-background text-sm">
-                <option value="">Todas as séries</option>
-                {seriesFiltradas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
-              </select>
-            )}
-            {filtroSerie && (
-              <select value={filtroTurma} onChange={e => setFiltroTurma(e.target.value)}
-                className="px-3 py-2 border rounded-md bg-background text-sm">
-                <option value="">Todas as turmas</option>
-                {turmasFiltradas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
-              </select>
-            )}
-          </div>
-
+          <Input type="text" placeholder="Buscar por nome..." value={filtroNome} onChange={e => setFiltroNome(e.target.value)} className="w-64 mb-4" />
           <div className="bg-card rounded-lg border overflow-hidden">
-            <table className="w-full table-striped">
+            <table className="w-full">
               <thead><tr className="border-b bg-secondary">
                 <th className="text-left p-3 text-sm font-medium">Nome</th>
                 <th className="text-left p-3 text-sm font-medium">CPF</th>
                 <th className="text-left p-3 text-sm font-medium">Telefone</th>
-                <th className="text-left p-3 text-sm font-medium">Dependentes</th>
                 <th className="text-left p-3 text-sm font-medium">Ações</th>
               </tr></thead>
               <tbody>
                 {filtered.map(r => {
-                  const deps = r.alunos || [];
                   const nomeR = r.usuario?.nome || 'Desconhecido';
                   return (
                     <tr key={r.id} className="border-b">
                       <td className="p-3 text-sm font-medium">{nomeR}</td>
                       <td className="p-3 text-sm">{r.usuario?.cpf || 'ND'}</td>
                       <td className="p-3 text-sm">{r.telefone || 'ND'}</td>
-                      <td className="p-3 text-sm">{deps.map((d: any) => d.nomeCompleto).join(', ')}</td>
                       <td className="p-3 flex gap-1">
                         <Button variant="secondary" size="sm" onClick={() => toast.info('Edição em desenvolvimento')}>Editar</Button>
                         <Button size="sm" onClick={() => { setResponsavelSelecionado(nomeR); setNotifOpen(true); }}>Notificar</Button>
@@ -165,7 +130,6 @@ export default function GestaoResponsaveis() {
         </>
       )}
 
-      {/* Notification Modal */}
       <Dialog open={notifOpen} onOpenChange={setNotifOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -181,7 +145,6 @@ export default function GestaoResponsaveis() {
         </DialogContent>
       </Dialog>
 
-      {/* Creation Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -210,7 +173,7 @@ export default function GestaoResponsaveis() {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancelar</Button>
-              <Button type="submit">Cadastrar</Button>
+              <Button type="submit" disabled={loading}>{loading ? 'Salvando...' : 'Cadastrar'}</Button>
             </div>
           </form>
         </DialogContent>
