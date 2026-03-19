@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      aluno_responsaveis: {
+        Row: {
+          aluno_id: string
+          created_at: string
+          id: string
+          parentesco: string | null
+          responsavel_id: string
+        }
+        Insert: {
+          aluno_id: string
+          created_at?: string
+          id?: string
+          parentesco?: string | null
+          responsavel_id: string
+        }
+        Update: {
+          aluno_id?: string
+          created_at?: string
+          id?: string
+          parentesco?: string | null
+          responsavel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aluno_responsaveis_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aluno_responsaveis_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alunos: {
         Row: {
           ativo: boolean

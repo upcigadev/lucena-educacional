@@ -26,19 +26,19 @@ export default function GestaoResponsaveis() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
-  const [alunos, setAlunos] = useState<any[]>([]);
+  const [alunoResponsaveis, setAlunoResponsaveis] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Detail view
   const [detalheId, setDetalheId] = useState<string | null>(null);
 
   const fetchData = async () => {
-    const [{ data: resps }, { data: alunosData }] = await Promise.all([
+    const [{ data: resps }, { data: arData }] = await Promise.all([
       supabase.from('responsaveis').select('*, usuario:usuarios(*)'),
-      supabase.from('alunos').select('*, turma:turmas(nome, serie:series(nome))'),
+      supabase.from('aluno_responsaveis').select('*, aluno:alunos(*, turma:turmas(nome, serie:series(nome)))'),
     ]);
     setResponsaveis(resps || []);
-    setAlunos(alunosData || []);
+    setAlunoResponsaveis(arData || []);
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -52,7 +52,7 @@ export default function GestaoResponsaveis() {
   }, [filtroNome, responsaveis]);
 
   const detalheResp = useMemo(() => detalheId ? responsaveis.find(r => r.id === detalheId) : null, [detalheId, responsaveis]);
-  const alunosDoResp = useMemo(() => detalheId ? alunos.filter(a => a.responsavel_id === detalheId) : [], [detalheId, alunos]);
+  const alunosDoResp = useMemo(() => detalheId ? alunoResponsaveis.filter((ar: any) => ar.responsavel_id === detalheId).map((ar: any) => ar.aluno) : [], [detalheId, alunoResponsaveis]);
 
   const handleEnviar = () => {
     toast.success('Aviso enviado ao responsável com sucesso!');
@@ -195,7 +195,7 @@ export default function GestaoResponsaveis() {
               <tbody>
                 {filtered.map(r => {
                   const nomeR = r.usuario?.nome || 'Desconhecido';
-                  const qtdAlunos = alunos.filter(a => a.responsavel_id === r.id).length;
+                  const qtdAlunos = alunoResponsaveis.filter((ar: any) => ar.responsavel_id === r.id).length;
                   return (
                     <tr key={r.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setDetalheId(r.id)}>
                       <td className="p-3 text-sm font-medium text-primary hover:underline">{nomeR}</td>
