@@ -234,7 +234,33 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                       <td className="p-3 text-sm">{r.usuario?.cpf}</td>
                       <td className="p-3 text-sm">{r.telefone || ''}</td>
                       <td className="p-3">
-                        <Badge variant="secondary">{r.parentesco || 'Responsável'}</Badge>
+                        {editandoVinculoId === r.vinculoId ? (
+                          <div className="flex items-center gap-1">
+                            <select
+                              value={parentescoEdit}
+                              onChange={e => setParentescoEdit(e.target.value)}
+                              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                            >
+                              {PARENTESCO_OPTIONS.map(p => (
+                                <option key={p} value={p}>{p}</option>
+                              ))}
+                            </select>
+                            <button onClick={() => handleSalvarParentesco(r.vinculoId)} className="p-1 text-primary hover:opacity-80"><Check className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setEditandoVinculoId(null)} className="p-1 text-muted-foreground hover:opacity-80"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="secondary">{r.parentesco || 'Responsável'}</Badge>
+                            {!readOnly && (
+                              <button
+                                onClick={() => { setEditandoVinculoId(r.vinculoId); setParentescoEdit(r.parentesco || 'Responsável'); }}
+                                className="p-1 text-muted-foreground hover:text-primary"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3">
                         {readOnly ? (
