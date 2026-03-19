@@ -1,56 +1,58 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function GestaoTurmas() {
-  const [lista, setLista] = useState<any[]>([]);
+  const { usuario } = useAuth();
+  const [turmas, setTurmas] = useState<any[]>([]);
   const [series, setSeries] = useState<any[]>([]);
   const [professores, setProfessores] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<any[]>([]);
+  const [escolaId, setEscolaId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      window.api?.turma?.listar?.() || Promise.resolve([]),
-      window.api?.serie?.listar?.() || Promise.resolve([]),
-      window.api?.professor?.listar?.() || Promise.resolve([]),
-      window.api?.aluno?.listar?.() || Promise.resolve([])
-    ]).then(([t, s, p, a]) => {
-      setLista(t); setSeries(s); setProfessores(p); setAlunos(a);
-    });
-  }, []);
+  const fetchData = useCallback(async () => {
+    if (!usuario) return;
+    const { data: diretor } = await supabase.from('diretores').select('escola_id').eq('usuario_id', usuario.id).single();
+    if (!diretor) { setLoading(false); return; }
+    setEscolaId(diretor.escola_id);
 
+    const [seriesRes, turmasRes, profsRes, alunosRes] = await Promise.all([
+      supabase.from('series').select('*').eq('escola_id', diretor.escola_id).order('nome'),
+      supabase.from('turmas').select('*, turma_professores(*, professores(*, usuarios(*)))').eq('escola_id', diretor.escola_id).order('nome'),
+      supabase.from('professores').select('*, usuarios(*), professor_escolas!inner(escola_id)').eq('professor_escolas.escola_id', diretor.escola_id),
+      supabase.from('alunos').select('*').eq('escola_id', diretor.escola_id),
+    ]);
+
+    if (seriesRes.data) setSeries(seriesRes.data);
+    if (turmasRes.data) setTurmas(turmasRes.data);
+    if (profsRes.data) setProfessores(profsRes.data);
+    if (alunosRes.data) setAlunos(alunosRes.data);
+    setLoading(false);
+  }, [usuario]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // New turma
   const [showForm, setShowForm] = useState(false);
   const [serieSel, setSerieSel] = useState('');
   const [sala, setSala] = useState('');
   const [profsSel, setProfsSel] = useState<string[]>([]);
 
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editSala, setEditSala] = useState('');
-  const [editProfsSel, setEditProfsSel] = useState<string[]>([]);
-
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-
-  const seriesEscola = series; // Todos
-  const profsEscola = professores;
-
   const proximaLetra = useMemo(() => {
     if (!serieSel) return '';
-    const turmasSerie = lista.filter(t => t.serieId === serieSel);
-    const letras = turmasSerie.map(t => {
-      const match = t.nome.match(/\s([A-Z])$/);
-      return match ? match[1] : '';
-    }).filter(Boolean).sort();
+    const turmasSerie = turmas.filter(t => t.serie_id === serieSel);
+    const letras = turmasSerie.map(t => { const m = t.nome.match(/\s([A-Z])$/); return m ? m[1] : ''; }).filter(Boolean).sort();
     if (letras.length === 0) return 'A';
-    const ultimaLetra = letras[letras.length - 1];
-    return String.fromCharCode(ultimaLetra.charCodeAt(0) + 1);
-  }, [serieSel, lista]);
+    return String.fromCharCode(letras[letras.length - 1].charCodeAt(0) + 1);
+  }, [serieSel, turmas]);
 
   const nomeTurma = useMemo(() => {
     if (!serieSel) return '';
@@ -58,53 +60,86 @@ export default function GestaoTurmas() {
     return serie ? `${serie.nome} ${proximaLetra}` : '';
   }, [serieSel, proximaLetra, series]);
 
-  const toggleProf = (id: string) => setProfsSel(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
-  const toggleEditProf = (id: string) => setEditProfsSel(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+  // Edit turma
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editSala, setEditSala] = useState('');
+  const [editProfsSel, setEditProfsSel] = useState<string[]>([]);
 
-  const handleCriar = (e: React.FormEvent) => {
+  // Delete
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  if (loading) return <div>Carregando...</div>;
+
+  const handleCriar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (profsSel.length === 0) { toast.error('Selecione ao menos um professor.'); return; }
-    toast.success(`Turma "${nomeTurma}" seria criada via IPC!`);
+    if (!serieSel || !sala) { toast.error('Preencha todos os campos.'); return; }
+
+    const { data: turmaData, error } = await supabase.from('turmas').insert({
+      nome: nomeTurma,
+      serie_id: serieSel,
+      escola_id: escolaId!,
+      sala: `Sala ${sala}`,
+    }).select().single();
+
+    if (error) { toast.error('Erro ao criar turma.'); return; }
+
+    if (profsSel.length > 0 && turmaData) {
+      await supabase.from('turma_professores').insert(
+        profsSel.map(pId => ({ turma_id: turmaData.id, professor_id: pId }))
+      );
+    }
+
+    toast.success(`Turma "${nomeTurma}" criada!`);
     setShowForm(false); setSerieSel(''); setSala(''); setProfsSel([]);
+    fetchData();
   };
 
   const openEdit = (turma: any) => {
     setEditId(turma.id);
-    const salaNum = turma.sala.replace(/\D/g, '');
-    setEditSala(salaNum || turma.sala);
-    setEditProfsSel(turma.professorIds || []);
+    setEditSala(turma.sala?.replace(/\D/g, '') || '');
+    setEditProfsSel((turma.turma_professores || []).map((tp: any) => tp.professor_id));
     setEditModalOpen(true);
   };
 
-  const handleSalvarEdit = () => {
-    if (editProfsSel.length === 0) { toast.error('Selecione ao menos um professor.'); return; }
-    toast.success('Turma atualizada IPC!');
-    setEditModalOpen(false);
-    setEditId(null);
+  const handleSalvarEdit = async () => {
+    if (!editId) return;
+    await supabase.from('turmas').update({ sala: `Sala ${editSala}` }).eq('id', editId);
+    await supabase.from('turma_professores').delete().eq('turma_id', editId);
+    if (editProfsSel.length > 0) {
+      await supabase.from('turma_professores').insert(
+        editProfsSel.map(pId => ({ turma_id: editId!, professor_id: pId }))
+      );
+    }
+    toast.success('Turma atualizada!');
+    setEditModalOpen(false); setEditId(null);
+    fetchData();
   };
 
-  const alunosNaTurmaDelete = deleteId ? alunos.filter(a => a.turmaId === deleteId).length : 0;
+  const alunosNaTurmaDelete = deleteId ? alunos.filter(a => a.turma_id === deleteId).length : 0;
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteId) return;
     if (alunosNaTurmaDelete > 0) {
-      toast.error(`Não é possível excluir: esta turma possui alunos.`);
-      setDeleteConfirmOpen(false); setDeleteId(null);
-      return;
+      toast.error('Não é possível excluir: turma possui alunos.');
+      setDeleteConfirmOpen(false); return;
     }
-    toast.success(`Turma excluída IPC.`);
+    await supabase.from('turmas').delete().eq('id', deleteId);
+    toast.success('Turma excluída!');
     setDeleteConfirmOpen(false); setDeleteId(null);
+    fetchData();
   };
 
-  const editingTurma = lista.find(t => t.id === editId);
+  const editingTurma = turmas.find(t => t.id === editId);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">Gestão de Turmas</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90">
-          {showForm ? 'Cancelar' : '+ Nova Turma'}
-        </button>
+        <Button onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancelar' : <><Plus className="w-4 h-4" /> Nova Turma</>}
+        </Button>
       </div>
 
       {showForm && (
@@ -112,72 +147,78 @@ export default function GestaoTurmas() {
           <h3 className="font-semibold mb-4">Nova Turma</h3>
           <form onSubmit={handleCriar} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Série</label>
-              <select value={serieSel} onChange={e => setSerieSel(e.target.value)} required className="w-full px-3 py-2 border rounded-md bg-background text-sm">
+              <Label>Série</Label>
+              <select value={serieSel} onChange={e => setSerieSel(e.target.value)} required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1">
                 <option value="">Selecione...</option>
-                {seriesEscola.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                {series.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
               </select>
             </div>
-
             {serieSel && (
               <div>
-                <label className="block text-sm font-medium mb-1">Nome da Turma (gerado)</label>
-                <input type="text" value={nomeTurma} readOnly className="w-full px-3 py-2 border rounded-md bg-muted text-sm" />
+                <Label>Nome da Turma (gerado)</Label>
+                <Input value={nomeTurma} readOnly className="mt-1 bg-muted" />
               </div>
             )}
-
             <div>
-              <label className="block text-sm font-medium mb-1">Sala (número)</label>
-              <input type="number" value={sala} onChange={e => setSala(e.target.value)} placeholder="Ex: 10" required min={1} className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+              <Label>Sala (número)</Label>
+              <Input type="number" value={sala} onChange={e => setSala(e.target.value)} placeholder="Ex: 10" required min={1} className="mt-1" />
             </div>
-
             <div>
-              <label className="block text-sm font-medium mb-1">Professor(es)</label>
-              <div className="space-y-2 border rounded-md p-3 bg-background max-h-40 overflow-y-auto">
-                {profsEscola.map(p => (
-                  <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={profsSel.includes(p.id)} onChange={() => toggleProf(p.id)} className="rounded border-input" />
-                    <span>{p.usuario?.nome}</span>
-                  </label>
-                ))}
+              <Label>Professor(es)</Label>
+              <div className="space-y-2 border rounded-md p-3 bg-background max-h-40 overflow-y-auto mt-1">
+                {professores.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum professor nesta escola.</p>
+                ) : (
+                  professores.map(p => (
+                    <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" checked={profsSel.includes(p.id)} onChange={() => setProfsSel(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])} className="rounded border-input" />
+                      <span>{p.usuarios?.nome}</span>
+                    </label>
+                  ))
+                )}
               </div>
             </div>
-
-            <button type="submit" className="bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium hover:opacity-90">Criar Turma</button>
+            <Button type="submit">Criar Turma</Button>
           </form>
         </div>
       )}
 
       <div className="bg-card rounded-lg border overflow-hidden">
-        <table className="w-full table-striped">
+        <table className="w-full">
           <thead><tr className="border-b bg-secondary">
             <th className="text-left p-3 text-sm font-medium">Turma</th>
             <th className="text-left p-3 text-sm font-medium">Sala</th>
+            <th className="text-left p-3 text-sm font-medium">Professores</th>
             <th className="text-left p-3 text-sm font-medium">Alunos</th>
-            <th className="text-left p-3 text-sm font-medium">Freq. Média</th>
             <th className="text-left p-3 text-sm font-medium">Ações</th>
           </tr></thead>
           <tbody>
-            {lista.map(t => (
-              <tr key={t.id} className="border-b">
-                <td className="p-3 text-sm font-medium">{t.nome}</td>
-                <td className="p-3 text-sm">{t.sala}</td>
-                <td className="p-3 text-sm">{alunos.filter(a => a.turmaId === t.id).length}</td>
-                <td className="p-3 text-sm">
-                  <span className="text-primary font-bold">100%</span>
-                </td>
-                <td className="p-3">
-                  <div className="flex gap-1">
-                    <button onClick={() => openEdit(t)} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded inline-flex items-center gap-1 hover:opacity-80">
-                      <Pencil className="w-3 h-3" /> Editar
-                    </button>
-                    <button onClick={() => { setDeleteId(t.id); setDeleteConfirmOpen(true); }} className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded inline-flex items-center gap-1 hover:opacity-80">
-                      <Trash2 className="w-3 h-3" /> Excluir
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {turmas.length === 0 ? (
+              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhuma turma cadastrada.</td></tr>
+            ) : (
+              turmas.map(t => {
+                const profs = (t.turma_professores || []).map((tp: any) => tp.professores?.usuarios?.nome).filter(Boolean);
+                const qtdAlunos = alunos.filter(a => a.turma_id === t.id).length;
+                return (
+                  <tr key={t.id} className="border-b">
+                    <td className="p-3 text-sm font-medium">{t.nome}</td>
+                    <td className="p-3 text-sm">{t.sala}</td>
+                    <td className="p-3 text-sm">{profs.join(', ') || '—'}</td>
+                    <td className="p-3 text-sm">{qtdAlunos}</td>
+                    <td className="p-3">
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(t)} className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded inline-flex items-center gap-1 hover:opacity-80">
+                          <Pencil className="w-3 h-3" /> Editar
+                        </button>
+                        <button onClick={() => { setDeleteId(t.id); setDeleteConfirmOpen(true); }} className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded inline-flex items-center gap-1 hover:opacity-80">
+                          <Trash2 className="w-3 h-3" /> Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -200,10 +241,10 @@ export default function GestaoTurmas() {
             <div>
               <Label>Professor(es)</Label>
               <div className="space-y-2 border rounded-md p-3 bg-background max-h-40 overflow-y-auto mt-1">
-                {profsEscola.map(p => (
+                {professores.map(p => (
                   <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={editProfsSel.includes(p.id)} onChange={() => toggleEditProf(p.id)} className="rounded border-input" />
-                    <span>{p.usuario?.nome}</span>
+                    <input type="checkbox" checked={editProfsSel.includes(p.id)} onChange={() => setEditProfsSel(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])} className="rounded border-input" />
+                    <span>{p.usuarios?.nome}</span>
                   </label>
                 ))}
               </div>
@@ -221,8 +262,8 @@ export default function GestaoTurmas() {
         onOpenChange={setDeleteConfirmOpen}
         title="Excluir Turma"
         description={alunosNaTurmaDelete > 0
-          ? `Esta turma possui alunos.`
-          : `Tem certeza que deseja excluir a turma "${lista.find(t => t.id === deleteId)?.nome}"?`}
+          ? `Esta turma possui ${alunosNaTurmaDelete} aluno(s).`
+          : `Excluir turma "${turmas.find(t => t.id === deleteId)?.nome}"?`}
         onConfirm={handleDelete}
         confirmLabel="Excluir"
         variant="destructive"

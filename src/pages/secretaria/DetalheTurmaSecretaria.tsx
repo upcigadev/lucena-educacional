@@ -1,41 +1,32 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { StatusBadge } from '@/components/StatusBadge';
 import { ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function DetalheTurmaSecretaria() {
   const { turmaId, escolaId } = useParams();
-  const [dataSel, setDataSel] = useState(new Date().toISOString().split('T')[0]);
-
-  const [turmas, setTurmas] = useState<any[]>([]);
+  const [turma, setTurma] = useState<any>(null);
   const [alunos, setAlunos] = useState<any[]>([]);
   const [professores, setProfessores] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      window.api?.turma?.listar?.() || Promise.resolve([]),
-      window.api?.aluno?.listar?.() || Promise.resolve([]),
-      window.api?.professor?.listar?.() || Promise.resolve([])
-    ]).then(([t, a, p]) => {
-      setTurmas(t); setAlunos(a); setProfessores(p);
-    });
-  }, []);
-
-  const turma = turmas.find(t => t.id === turmaId);
-  const alunosTurma = alunos.filter(a => a.turmaId === turmaId);
-  const profs = professores.filter(p => p.turmas?.some((tp: any) => tp.turmaId === turmaId));
-
-  if (!turma) return <div>Carregando Turma...</div>;
-
-  const dadosAlunos = alunosTurma.map(a => {
-    // Localiza a frequência da data selecionada
-    const entrada = (a.frequencias || []).find((f: any) => f.dataHora && f.dataHora.startsWith(dataSel));
-    return {
-      aluno: a,
-      entrada: entrada || { status: 'FALTA' },
-      turma: entrada || { status: 'FALTA' },
+    const fetch = async () => {
+      const [turmaRes, alunosRes, profsRes] = await Promise.all([
+        supabase.from('turmas').select('*').eq('id', turmaId!).single(),
+        supabase.from('alunos').select('*').eq('turma_id', turmaId!).order('nome_completo'),
+        supabase.from('turma_professores').select('*, professores(*, usuarios(*))').eq('turma_id', turmaId!),
+      ]);
+      if (turmaRes.data) setTurma(turmaRes.data);
+      if (alunosRes.data) setAlunos(alunosRes.data);
+      if (profsRes.data) setProfessores(profsRes.data);
+      setLoading(false);
     };
-  });
+    fetch();
+  }, [turmaId]);
+
+  if (loading) return <div>Carregando turma...</div>;
+  if (!turma) return <div>Turma não encontrada</div>;
 
   return (
     <div>
@@ -47,59 +38,45 @@ export default function DetalheTurmaSecretaria() {
 
       <h2 className="text-lg font-semibold mb-3">Professores Vinculados</h2>
       <div className="bg-card rounded-lg border overflow-hidden mb-6">
-        <table className="w-full table-striped">
+        <table className="w-full">
           <thead><tr className="border-b bg-secondary">
             <th className="text-left p-3 text-sm font-medium">Nome</th>
-            <th className="text-left p-3 text-sm font-medium">Disciplinas</th>
           </tr></thead>
           <tbody>
-            {profs.map(p => (
-              <tr key={p.id} className="border-b">
-                <td className="p-3 text-sm font-medium">{p.usuario?.nome}</td>
-                <td className="p-3 text-sm">Geral</td>
-              </tr>
-            ))}
+            {professores.length === 0 ? (
+              <tr><td className="p-3 text-sm text-muted-foreground">Nenhum professor vinculado.</td></tr>
+            ) : (
+              professores.map(tp => (
+                <tr key={tp.id} className="border-b">
+                  <td className="p-3 text-sm font-medium">{tp.professores?.usuarios?.nome}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
-      <h2 className="text-lg font-semibold mb-3">Frequência</h2>
-      <div className="mb-4">
-        <label className="text-sm font-medium mr-2">Data:</label>
-        <input type="date" value={dataSel} onChange={e => setDataSel(e.target.value)} className="px-3 py-1.5 border rounded-md bg-background text-sm" />
+      <h2 className="text-lg font-semibold mb-3">Alunos ({alunos.length})</h2>
+      <div className="bg-card rounded-lg border overflow-hidden">
+        <table className="w-full">
+          <thead><tr className="border-b bg-secondary">
+            <th className="text-left p-3 text-sm font-medium">Nome</th>
+            <th className="text-left p-3 text-sm font-medium">Matrícula</th>
+          </tr></thead>
+          <tbody>
+            {alunos.length === 0 ? (
+              <tr><td colSpan={2} className="p-3 text-sm text-muted-foreground">Nenhum aluno nesta turma.</td></tr>
+            ) : (
+              alunos.map(a => (
+                <tr key={a.id} className="border-b">
+                  <td className="p-3 text-sm font-medium">{a.nome_completo}</td>
+                  <td className="p-3 text-sm">{a.matricula}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-
-      {['Entrada na Escola'].map((titulo, idx) => {
-        const key = idx === 0 ? 'entrada' : 'turma';
-        const presentes = dadosAlunos.filter(d => d[key as 'entrada' | 'turma']?.status === 'PRESENTE' || d[key as 'entrada' | 'turma']?.status === 'ATRASADO');
-        const ausentes = dadosAlunos.filter(d => d[key as 'entrada' | 'turma']?.status !== 'PRESENTE' && d[key as 'entrada' | 'turma']?.status !== 'ATRASADO');
-        return (
-          <div key={titulo} className="mb-6">
-            <h3 className="font-medium mb-2">{titulo}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm font-semibold badge-presente px-3 py-1 rounded-full">Presentes ({presentes.length})</span>
-                <div className="space-y-1 mt-2">
-                  {presentes.map(d => (
-                    <div key={d.aluno.id} className="bg-card border rounded p-2 text-sm">{d.aluno.nomeCompleto}</div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <span className="text-sm font-semibold badge-ausente px-3 py-1 rounded-full">Ausentes ({ausentes.length})</span>
-                <div className="space-y-1 mt-2">
-                  {ausentes.map(d => (
-                    <div key={d.aluno.id} className="bg-card border rounded p-2 text-sm flex justify-between">
-                      <span>{d.aluno.nomeCompleto}</span>
-                      <StatusBadge status={d[key as 'entrada' | 'turma']?.status || 'FALTA'} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }
