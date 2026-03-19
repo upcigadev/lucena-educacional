@@ -68,8 +68,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const notifs: any[] = [];
   const unread = notifs.filter((n: any) => !n.lida).length;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
