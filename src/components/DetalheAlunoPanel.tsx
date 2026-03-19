@@ -308,7 +308,15 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                       <Button variant="outline" onClick={() => setEditandoDados(true)}>
                         <Pencil className="w-4 h-4" /> Editar Dados
                       </Button>
-                      <Button onClick={handleSalvarTurma}>
+                      <Button
+                        onClick={() => {
+                          if ((turmaId || null) !== (aluno.turma_id || null)) {
+                            setModalTurma(true);
+                          } else {
+                            toast.info('Nenhuma alteração de turma detectada.');
+                          }
+                        }}
+                      >
                         <Save className="w-4 h-4" /> Salvar Turma
                       </Button>
                     </>
