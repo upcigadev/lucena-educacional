@@ -322,7 +322,24 @@ export default function EscolaDetalheSecretaria() {
           <div className="space-y-4 py-2">
             <div>
               <Label>Nome da Série</Label>
-              <Input value={novaSerie} onChange={e => setNovaSerie(e.target.value)} placeholder="Ex: 6º Ano" className="mt-1" />
+              <select
+                value={novaSerie}
+                onChange={e => setNovaSerie(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring mt-1"
+              >
+                <option value="">Selecione a série...</option>
+                {[
+                  'Berçário I', 'Berçário II',
+                  'Maternal I', 'Maternal II',
+                  'Pré I', 'Pré II',
+                  '1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano',
+                  '6º Ano', '7º Ano', '8º Ano', '9º Ano',
+                  '1ª Série EM', '2ª Série EM', '3ª Série EM',
+                  'EJA - Fase I', 'EJA - Fase II', 'EJA - Fase III', 'EJA - Fase IV',
+                ].filter(nome => !series.some(s => s.nome === nome)).map(nome => (
+                  <option key={nome} value={nome}>{nome}</option>
+                ))}
+              </select>
             </div>
             <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
               <h4 className="font-semibold text-sm flex items-center gap-2">

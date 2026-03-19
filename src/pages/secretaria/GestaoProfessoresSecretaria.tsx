@@ -25,7 +25,7 @@ export default function GestaoProfessoresSecretaria() {
   const [cpf, setCpf] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [disciplinas, setDisciplinas] = useState('');
+  const [disciplinasSel, setDisciplinasSel] = useState<string[]>([]);
   const [escolasSel, setEscolasSel] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
