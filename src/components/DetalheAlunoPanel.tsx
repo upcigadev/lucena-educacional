@@ -108,6 +108,17 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
     }
   };
 
+  const handleSalvarParentesco = async (vinculoId: string) => {
+    const { error } = await supabase.from('aluno_responsaveis').update({ parentesco: parentescoEdit }).eq('id', vinculoId);
+    if (error) {
+      toast.error('Erro ao atualizar parentesco: ' + error.message);
+    } else {
+      toast.success('Parentesco atualizado!');
+      setVinculos(prev => prev.map(v => v.id === vinculoId ? { ...v, parentesco: parentescoEdit } : v));
+      setEditandoVinculoId(null);
+    }
+  };
+
   const handleVincularResp = async (respId: string) => {
     const { data, error } = await supabase.from('aluno_responsaveis').insert({
       aluno_id: aluno.id,
