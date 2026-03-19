@@ -379,6 +379,51 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
           </div>
         </TabsContent>
 
+        <TabsContent value="historico">
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-2 mb-4">
+                <History className="w-5 h-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">Histórico de Turmas</h2>
+              </div>
+              {historico.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhum registro de mudança de turma encontrado.</p>
+              ) : (
+                <div className="bg-card rounded-lg border overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-secondary">
+                        <th className="text-left p-3 text-sm font-medium">Turma</th>
+                        <th className="text-left p-3 text-sm font-medium">Série</th>
+                        <th className="text-left p-3 text-sm font-medium">Início</th>
+                        <th className="text-left p-3 text-sm font-medium">Fim</th>
+                        <th className="text-left p-3 text-sm font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historico.map((h: any) => (
+                        <tr key={h.id} className="border-b">
+                          <td className="p-3 text-sm font-medium">{h.turma_nome}</td>
+                          <td className="p-3 text-sm">{h.serie_nome || '—'}</td>
+                          <td className="p-3 text-sm">{format(new Date(h.data_inicio), 'dd/MM/yyyy')}</td>
+                          <td className="p-3 text-sm">{h.data_fim ? format(new Date(h.data_fim), 'dd/MM/yyyy') : '—'}</td>
+                          <td className="p-3">
+                            {h.data_fim ? (
+                              <Badge variant="secondary">Encerrado</Badge>
+                            ) : (
+                              <Badge className="bg-primary/10 text-primary border-primary/20">Atual</Badge>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="frequencia">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <AttendanceCalendar registros={[]} titulo="Entrada na Escola" percentual={100} />
