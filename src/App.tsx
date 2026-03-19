@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import Login from "./pages/Login";
+import EsqueceuSenha from "./pages/EsqueceuSenha";
+import RedefinirSenha from "./pages/RedefinirSenha";
 import NotFound from "./pages/NotFound";
 
 // Responsável
