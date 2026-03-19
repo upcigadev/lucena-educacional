@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, UserPlus, Fingerprint, CheckCircle2, Loader2, Search, X, Plus } from 'lucide-react';
 import CadastroResponsavelModal from '@/components/CadastroResponsavelModal';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function NovoAlunoSecretaria() {
   const navigate = useNavigate();
@@ -34,20 +35,25 @@ export default function NovoAlunoSecretaria() {
   const [series, setSeries] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      window.api?.escola?.listar?.() || Promise.resolve([]),
-      window.api?.serie?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([]),
-      window.api?.responsavel?.listar?.() || Promise.resolve([])
-    ]).then(([e, s, t, r]) => {
-      setEscolas(e); setSeries(s); setTurmas(t); setResponsaveis(r);
-    });
+  const fetchData = useCallback(async () => {
+    const [escolasRes, seriesRes, turmasRes, respsRes] = await Promise.all([
+      supabase.from('escolas').select('*').order('nome'),
+      supabase.from('series').select('*').order('nome'),
+      supabase.from('turmas').select('*').order('nome'),
+      supabase.from('responsaveis').select('*, usuario:usuarios(*)'),
+    ]);
+    setEscolas(escolasRes.data || []);
+    setSeries(seriesRes.data || []);
+    setTurmas(turmasRes.data || []);
+    setResponsaveis(respsRes.data || []);
   }, []);
 
-  const seriesFiltradas = useMemo(() => escolaSel ? series.filter((s: any) => s.escolaId === escolaSel) : [], [escolaSel, series]);
-  const turmasFiltradas = useMemo(() => serieSel ? turmas.filter((t: any) => t.serieId === serieSel) : [], [serieSel, turmas]);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const seriesFiltradas = useMemo(() => escolaSel ? series.filter(s => s.escola_id === escolaSel) : [], [escolaSel, series]);
+  const turmasFiltradas = useMemo(() => serieSel ? turmas.filter(t => t.serie_id === serieSel) : [], [serieSel, turmas]);
 
   const resultadosBusca = useMemo(() => {
     if (!buscaResp.trim()) return [];
@@ -71,6 +77,8 @@ export default function NovoAlunoSecretaria() {
   const handleNovoRespCadastrado = (novoResp: { id: string; nome: string; cpf: string; whatsapp: string; parentesco: string }) => {
     setNovosResps(prev => [...prev, novoResp]);
     setResponsaveisVinculados(prev => [...prev, novoResp.id]);
+    // Refresh responsaveis list to include the newly created one
+    fetchData();
   };
 
   const handleCapturarBiometria = () => {
@@ -82,13 +90,39 @@ export default function NovoAlunoSecretaria() {
     }, 2000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!nome.trim() || !matricula.trim() || !dataNascimento || !escolaSel) {
+      toast.error('Preencha todos os dados obrigatórios do aluno.');
+      return;
+    }
     if (responsaveisVinculados.length === 0) {
       toast.error('Vincule ao menos um responsável ao aluno.');
       return;
     }
+
+    setSaving(true);
+
+    // Use the first linked responsavel as the primary
+    const responsavelPrincipal = responsaveisVinculados[0];
+
+    const { error } = await supabase.from('alunos').insert({
+      nome_completo: nome,
+      matricula,
+      data_nascimento: dataNascimento,
+      escola_id: escolaSel,
+      turma_id: turmaSel || null,
+      responsavel_id: responsavelPrincipal,
+    });
+
+    if (error) {
+      toast.error('Erro ao cadastrar aluno: ' + error.message);
+      setSaving(false);
+      return;
+    }
+
     toast.success('Aluno cadastrado com sucesso!');
+    setSaving(false);
     navigate('/secretaria/alunos');
   };
 
@@ -120,19 +154,19 @@ export default function NovoAlunoSecretaria() {
               <TabsContent value="dados">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="nome">Nome Completo</Label>
+                    <Label htmlFor="nome">Nome Completo *</Label>
                     <Input id="nome" value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome completo do aluno" required className="mt-1" />
                   </div>
                   <div>
-                    <Label htmlFor="matricula">Matrícula</Label>
+                    <Label htmlFor="matricula">Matrícula *</Label>
                     <Input id="matricula" value={matricula} onChange={e => setMatricula(e.target.value)} placeholder="Ex: 2026022" required className="mt-1" />
                   </div>
                   <div>
-                    <Label htmlFor="dataNasc">Data de Nascimento</Label>
+                    <Label htmlFor="dataNasc">Data de Nascimento *</Label>
                     <Input id="dataNasc" type="date" value={dataNascimento} onChange={e => setDataNascimento(e.target.value)} required className="mt-1" />
                   </div>
                   <div>
-                    <Label htmlFor="escola">Escola</Label>
+                    <Label htmlFor="escola">Escola *</Label>
                     <select
                       id="escola"
                       value={escolaSel}
@@ -151,11 +185,10 @@ export default function NovoAlunoSecretaria() {
                         id="serie"
                         value={serieSel}
                         onChange={e => { setSerieSel(e.target.value); setTurmaSel(''); }}
-                        required
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
                       >
                         <option value="">Selecione a série...</option>
-                        {seriesFiltradas.map((s: any) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                        {seriesFiltradas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
                       </select>
                     </div>
                   )}
@@ -166,11 +199,10 @@ export default function NovoAlunoSecretaria() {
                         id="turma"
                         value={turmaSel}
                         onChange={e => setTurmaSel(e.target.value)}
-                        required
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
                       >
                         <option value="">Selecione a turma...</option>
-                        {turmasFiltradas.map((t: any) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                        {turmasFiltradas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
                       </select>
                     </div>
                   )}
@@ -268,7 +300,9 @@ export default function NovoAlunoSecretaria() {
             </Tabs>
 
             <div className="flex gap-3 pt-6 mt-6 border-t">
-              <Button type="submit">Salvar Aluno</Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Salvando...' : 'Salvar Aluno'}
+              </Button>
               <Button type="button" variant="outline" onClick={() => navigate('/secretaria/alunos')}>Cancelar</Button>
             </div>
           </CardContent>
