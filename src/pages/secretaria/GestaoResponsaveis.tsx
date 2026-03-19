@@ -131,6 +131,7 @@ export default function GestaoResponsaveis() {
               <thead>
                 <tr className="border-b bg-secondary">
                   <th className="text-left p-3 text-sm font-medium">Nome</th>
+                  <th className="text-left p-3 text-sm font-medium">Parentesco</th>
                   <th className="text-left p-3 text-sm font-medium">Matrícula</th>
                   <th className="text-left p-3 text-sm font-medium">Série / Turma</th>
                   <th className="text-left p-3 text-sm font-medium">Status</th>
@@ -140,6 +141,11 @@ export default function GestaoResponsaveis() {
                 {alunosDoResp.map(a => (
                   <tr key={a.id} className="border-b">
                     <td className="p-3 text-sm font-medium">{a.nome_completo}</td>
+                    <td className="p-3 text-sm">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent text-accent-foreground">
+                        {a.parentesco}
+                      </span>
+                    </td>
                     <td className="p-3 text-sm">{a.matricula}</td>
                     <td className="p-3 text-sm">
                       {a.turma ? `${a.turma.serie?.nome || ''} – ${a.turma.nome}` : 'Sem turma'}

@@ -275,9 +275,14 @@ export default function NovoAlunoSecretaria() {
                         const cpfResp = resp.usuario?.cpf || resp.cpf;
                         return (
                           <div key={id} className="flex items-center justify-between border rounded-md px-3 py-2 bg-muted/30">
-                            <div>
+                            <div className="flex items-center gap-2">
                               <span className="text-sm font-medium">{nomeResp}</span>
-                              <span className="text-xs text-muted-foreground ml-2">{cpfResp}</span>
+                              <span className="text-xs text-muted-foreground">{cpfResp}</span>
+                              {resp.parentesco && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent text-accent-foreground">
+                                  {resp.parentesco}
+                                </span>
+                              )}
                             </div>
                             <button type="button" onClick={() => desvincularResponsavel(id)} className="text-destructive hover:opacity-70">
                               <X className="w-4 h-4" />
