@@ -186,6 +186,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
         <TabsList className="mb-6">
           <TabsTrigger value="dados">Dados & Turma</TabsTrigger>
           <TabsTrigger value="responsaveis">Responsáveis</TabsTrigger>
+          <TabsTrigger value="historico">Histórico de Turmas</TabsTrigger>
           <TabsTrigger value="frequencia">Frequência</TabsTrigger>
         </TabsList>
 
