@@ -53,6 +53,54 @@ export type Database = {
           },
         ]
       }
+      aluno_turma_historico: {
+        Row: {
+          aluno_id: string
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          id: string
+          serie_nome: string | null
+          turma_id: string | null
+          turma_nome: string
+        }
+        Insert: {
+          aluno_id: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          serie_nome?: string | null
+          turma_id?: string | null
+          turma_nome: string
+        }
+        Update: {
+          aluno_id?: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          serie_nome?: string | null
+          turma_id?: string | null
+          turma_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aluno_turma_historico_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aluno_turma_historico_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alunos: {
         Row: {
           ativo: boolean
