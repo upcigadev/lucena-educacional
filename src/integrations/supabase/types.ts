@@ -469,6 +469,7 @@ export type Database = {
       get_meu_responsavel_id: { Args: never; Returns: string }
       get_meu_usuario_id: { Args: never; Returns: string }
       get_minha_escola_diretor: { Args: never; Returns: string }
+      get_usuarios_da_escola_diretor: { Args: never; Returns: string[] }
       has_papel: { Args: { _papel: string }; Returns: boolean }
       lookup_email_by_cpf: {
         Args: { _cpf: string }
