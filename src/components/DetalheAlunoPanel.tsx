@@ -477,7 +477,39 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
         variant="destructive"
       />
 
-      {!readOnly && (
+      {/* Modal de mudança de turma com observação */}
+      <Dialog open={modalTurma} onOpenChange={(open) => { setModalTurma(open); if (!open) setObservacaoTurma(''); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Mudança de Turma</DialogTitle>
+            <DialogDescription>Informe o motivo da mudança de turma (opcional).</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label className="text-sm">Nova Turma</Label>
+              <Input value={turmas.find(t => t.id === turmaId)?.nome || 'Sem turma'} readOnly className="mt-1 bg-muted" />
+            </div>
+            <div>
+              <Label className="text-sm">Observação / Motivo</Label>
+              <textarea
+                value={observacaoTurma}
+                onChange={e => setObservacaoTurma(e.target.value)}
+                placeholder="Ex: Transferência por solicitação da família..."
+                rows={3}
+                className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-sm border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setModalTurma(false); setObservacaoTurma(''); }}>Cancelar</Button>
+            <Button onClick={handleSalvarTurma}>
+              <Save className="w-4 h-4" /> Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
         <Dialog open={vincularModalOpen} onOpenChange={setVincularModalOpen}>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
