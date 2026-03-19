@@ -54,7 +54,7 @@ export default function GestaoProfessoresSecretaria() {
     setCpf(p.usuario?.cpf || '');
     setEmail(p.usuario?.email || '');
     setSenha('');
-    setDisciplinas('Geral');
+    setDisciplinasSel(['Assuntos Gerais']);
     const escolaIds = (p.escolas || []).map((pe: any) => pe.escola?.id).filter(Boolean);
     setEscolasSel(escolaIds);
     setEditId(id);
