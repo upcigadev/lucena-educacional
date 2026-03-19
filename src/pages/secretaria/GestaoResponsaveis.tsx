@@ -26,7 +26,7 @@ export default function GestaoResponsaveis() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
-  const [alunos, setAlunos] = useState<any[]>([]);
+  const [alunoResponsaveis, setAlunoResponsaveis] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Detail view

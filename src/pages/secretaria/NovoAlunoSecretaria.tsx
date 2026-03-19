@@ -103,17 +103,13 @@ export default function NovoAlunoSecretaria() {
 
     setSaving(true);
 
-    // Use the first linked responsavel as the primary
-    const responsavelPrincipal = responsaveisVinculados[0];
-
-    const { error } = await supabase.from('alunos').insert({
+    const { data: aluno, error } = await supabase.from('alunos').insert({
       nome_completo: nome,
       matricula,
       data_nascimento: dataNascimento,
       escola_id: escolaSel,
       turma_id: turmaSel || null,
-      responsavel_id: responsavelPrincipal,
-    });
+    }).select().single();
 
     if (error) {
       toast.error('Erro ao cadastrar aluno: ' + error.message);
@@ -121,7 +117,23 @@ export default function NovoAlunoSecretaria() {
       return;
     }
 
-    toast.success('Aluno cadastrado com sucesso!');
+    // Insert all linked responsaveis into the junction table
+    const vinculos = responsaveisVinculados.map(respId => {
+      const novoResp = novosResps.find(n => n.id === respId);
+      return {
+        aluno_id: aluno.id,
+        responsavel_id: respId,
+        parentesco: novoResp?.parentesco || 'Responsável',
+      };
+    });
+
+    const { error: vincError } = await supabase.from('aluno_responsaveis').insert(vinculos);
+    if (vincError) {
+      toast.warning('Aluno criado, mas erro ao vincular responsáveis: ' + vincError.message);
+    } else {
+      toast.success('Aluno cadastrado com sucesso!');
+    }
+
     setSaving(false);
     navigate('/secretaria/alunos');
   };
