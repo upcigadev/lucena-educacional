@@ -195,8 +195,22 @@ export default function GestaoProfessoresSecretaria() {
               </div>
             )}
             <div>
-              <Label htmlFor="prof-disc">Disciplinas</Label>
-              <Input id="prof-disc" value={disciplinas} onChange={e => setDisciplinas(e.target.value)} placeholder="Matemática, Ciências" />
+              <Label>Disciplinas</Label>
+              <div className="space-y-2 border rounded-md p-3 bg-background max-h-40 overflow-y-auto mt-1">
+                {[
+                  'Assuntos Gerais', 'Português', 'Matemática', 'Ciências', 'História',
+                  'Geografia', 'Educação Física', 'Artes', 'Inglês', 'Ensino Religioso',
+                  'Informática', 'Música', 'Redação',
+                ].map(disc => (
+                  <label key={disc} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={disciplinasSel.includes(disc)}
+                      onCheckedChange={() => setDisciplinasSel(prev => prev.includes(disc) ? prev.filter(d => d !== disc) : [...prev, disc])}
+                    />
+                    <span>{disc}</span>
+                  </label>
+                ))}
+              </div>
             </div>
             <div>
               <Label>Escola(s) vinculada(s) *</Label>
