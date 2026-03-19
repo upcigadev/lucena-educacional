@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
-import { ArrowLeft, Save, Search, UserPlus, UserMinus, MessageSquare, Pencil, Check, X, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Save, Search, UserPlus, UserMinus, MessageSquare, Pencil, Check, X, CalendarIcon, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
