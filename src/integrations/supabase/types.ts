@@ -194,7 +194,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_meu_papel: { Args: never; Returns: string }
+      get_meu_usuario_id: { Args: never; Returns: string }
+      has_papel: { Args: { _papel: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
