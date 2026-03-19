@@ -1,16 +1,20 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
-import { ArrowLeft, Save, Search, UserPlus, UserMinus, MessageSquare, Pencil, Check, X } from 'lucide-react';
+import { ArrowLeft, Save, Search, UserPlus, UserMinus, MessageSquare, Pencil, Check, X, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
+import { ConfirmModal } from '@/components/ConfirmModal';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
 interface DetalheAlunoPanelProps {
@@ -34,13 +38,17 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   const [buscaResp, setBuscaResp] = useState('');
   const [parentescoSel, setParentescoSel] = useState('Responsável');
 
-  // Aviso modal (read-only mode)
   const [modalAviso, setModalAviso] = useState(false);
   const [aviso, setAviso] = useState('');
 
-  // Edição de parentesco inline
   const [editandoVinculoId, setEditandoVinculoId] = useState<string | null>(null);
   const [parentescoEdit, setParentescoEdit] = useState('');
+
+  const [confirmDesvincular, setConfirmDesvincular] = useState<{ open: boolean; vinculoId: string; nomeResp: string }>({ open: false, vinculoId: '', nomeResp: '' });
+
+  const [editandoDados, setEditandoDados] = useState(false);
+  const [nomeEdit, setNomeEdit] = useState('');
+  const [dataNascEdit, setDataNascEdit] = useState<Date | undefined>(undefined);
 
   const fetchData = useCallback(async () => {
     if (!alunoId) return;
@@ -57,6 +65,8 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
     if (alunoRes.data) {
       setAluno(alunoRes.data);
       setTurmaId(alunoRes.data.turma_id || '');
+      setNomeEdit(alunoRes.data.nome_completo);
+      setDataNascEdit(alunoRes.data.data_nascimento ? new Date(alunoRes.data.data_nascimento + 'T00:00:00') : undefined);
     }
     setTurmas(turmasRes.data || []);
     setSeries(seriesRes.data || []);
@@ -137,6 +147,23 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
     }
   };
 
+  const handleSalvarDadosAluno = async () => {
+    const updates: any = { nome_completo: nomeEdit };
+    if (dataNascEdit) {
+      updates.data_nascimento = format(dataNascEdit, 'yyyy-MM-dd');
+    } else {
+      updates.data_nascimento = null;
+    }
+    const { error } = await supabase.from('alunos').update(updates).eq('id', aluno.id);
+    if (error) {
+      toast.error('Erro ao salvar dados: ' + error.message);
+    } else {
+      toast.success('Dados do aluno atualizados!');
+      setAluno({ ...aluno, nome_completo: nomeEdit, data_nascimento: updates.data_nascimento });
+      setEditandoDados(false);
+    }
+  };
+
   return (
     <div>
       <Link to={backLink} className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-4">
@@ -164,7 +191,46 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
             <CardContent className="pt-5 space-y-4 max-w-lg">
               <div>
                 <Label>Nome do Aluno</Label>
-                <Input value={aluno.nome_completo} readOnly className="mt-1 bg-muted" />
+                {!readOnly && editandoDados ? (
+                  <Input value={nomeEdit} onChange={e => setNomeEdit(e.target.value)} className="mt-1" />
+                ) : (
+                  <Input value={aluno.nome_completo} readOnly className="mt-1 bg-muted" />
+                )}
+              </div>
+              <div>
+                <Label>Data de Nascimento</Label>
+                {!readOnly && editandoDados ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal mt-1",
+                          !dataNascEdit && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dataNascEdit ? format(dataNascEdit, 'dd/MM/yyyy') : <span>Selecionar data</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dataNascEdit}
+                        onSelect={setDataNascEdit}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <Input
+                    value={aluno.data_nascimento ? format(new Date(aluno.data_nascimento + 'T00:00:00'), 'dd/MM/yyyy') : '—'}
+                    readOnly
+                    className="mt-1 bg-muted"
+                  />
+                )}
               </div>
               <div>
                 <Label>Matrícula</Label>
@@ -196,9 +262,31 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                 )}
               </div>
               {!readOnly && (
-                <Button onClick={handleSalvarTurma}>
-                  <Save className="w-4 h-4" /> Salvar Alterações
-                </Button>
+                <div className="flex gap-2">
+                  {editandoDados ? (
+                    <>
+                      <Button onClick={handleSalvarDadosAluno}>
+                        <Save className="w-4 h-4" /> Salvar Dados
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        setEditandoDados(false);
+                        setNomeEdit(aluno.nome_completo);
+                        setDataNascEdit(aluno.data_nascimento ? new Date(aluno.data_nascimento + 'T00:00:00') : undefined);
+                      }}>
+                        Cancelar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" onClick={() => setEditandoDados(true)}>
+                        <Pencil className="w-4 h-4" /> Editar Dados
+                      </Button>
+                      <Button onClick={handleSalvarTurma}>
+                        <Save className="w-4 h-4" /> Salvar Turma
+                      </Button>
+                    </>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -272,7 +360,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleDesvincularResp(r.vinculoId)}
+                            onClick={() => setConfirmDesvincular({ open: true, vinculoId: r.vinculoId, nomeResp: r.usuario?.nome || 'este responsável' })}
                             className="text-xs bg-destructive text-destructive-foreground px-3 py-1 rounded inline-flex items-center gap-1 hover:opacity-80"
                           >
                             <UserMinus className="w-3 h-3" /> Desvincular
@@ -293,6 +381,19 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
           </div>
         </TabsContent>
       </Tabs>
+
+      <ConfirmModal
+        open={confirmDesvincular.open}
+        onOpenChange={(open) => setConfirmDesvincular(prev => ({ ...prev, open }))}
+        title="Desvincular Responsável"
+        description={`Tem certeza que deseja desvincular "${confirmDesvincular.nomeResp}" deste aluno? Esta ação não pode ser desfeita.`}
+        onConfirm={() => {
+          handleDesvincularResp(confirmDesvincular.vinculoId);
+          setConfirmDesvincular({ open: false, vinculoId: '', nomeResp: '' });
+        }}
+        confirmLabel="Desvincular"
+        variant="destructive"
+      />
 
       {!readOnly && (
         <Dialog open={vincularModalOpen} onOpenChange={setVincularModalOpen}>
