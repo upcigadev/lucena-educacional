@@ -195,7 +195,7 @@ export default function GestaoResponsaveis() {
               <tbody>
                 {filtered.map(r => {
                   const nomeR = r.usuario?.nome || 'Desconhecido';
-                  const qtdAlunos = alunos.filter(a => a.responsavel_id === r.id).length;
+                  const qtdAlunos = alunoResponsaveis.filter((ar: any) => ar.responsavel_id === r.id).length;
                   return (
                     <tr key={r.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setDetalheId(r.id)}>
                       <td className="p-3 text-sm font-medium text-primary hover:underline">{nomeR}</td>
