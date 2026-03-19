@@ -54,13 +54,14 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   const fetchData = useCallback(async () => {
     if (!alunoId) return;
 
-    const [alunoRes, turmasRes, seriesRes, escolasRes, respsRes, vinculosRes] = await Promise.all([
+    const [alunoRes, turmasRes, seriesRes, escolasRes, respsRes, vinculosRes, historicoRes] = await Promise.all([
       supabase.from('alunos').select('*').eq('id', alunoId).single(),
       supabase.from('turmas').select('*').order('nome'),
       supabase.from('series').select('*').order('nome'),
       supabase.from('escolas').select('*').order('nome'),
       supabase.from('responsaveis').select('*, usuario:usuarios(*)'),
       supabase.from('aluno_responsaveis').select('*').eq('aluno_id', alunoId),
+      supabase.from('aluno_turma_historico').select('*').eq('aluno_id', alunoId).order('data_inicio', { ascending: false }),
     ]);
 
     if (alunoRes.data) {
