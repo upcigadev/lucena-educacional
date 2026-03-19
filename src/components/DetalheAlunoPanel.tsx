@@ -439,6 +439,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                           <td className="p-3 text-sm">{h.serie_nome || '—'}</td>
                           <td className="p-3 text-sm">{format(new Date(h.data_inicio), 'dd/MM/yyyy')}</td>
                           <td className="p-3 text-sm">{h.data_fim ? format(new Date(h.data_fim), 'dd/MM/yyyy') : '—'}</td>
+                          <td className="p-3 text-sm text-muted-foreground">{h.observacao || '—'}</td>
                           <td className="p-3">
                             {h.data_fim ? (
                               <Badge variant="secondary">Encerrado</Badge>
