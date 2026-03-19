@@ -33,12 +33,12 @@ export default function GestaoResponsaveis() {
   const [detalheId, setDetalheId] = useState<string | null>(null);
 
   const fetchData = async () => {
-    const [{ data: resps }, { data: alunosData }] = await Promise.all([
+    const [{ data: resps }, { data: arData }] = await Promise.all([
       supabase.from('responsaveis').select('*, usuario:usuarios(*)'),
-      supabase.from('alunos').select('*, turma:turmas(nome, serie:series(nome))'),
+      supabase.from('aluno_responsaveis').select('*, aluno:alunos(*, turma:turmas(nome, serie:series(nome)))'),
     ]);
     setResponsaveis(resps || []);
-    setAlunos(alunosData || []);
+    setAlunoResponsaveis(arData || []);
   };
 
   useEffect(() => { fetchData(); }, []);
