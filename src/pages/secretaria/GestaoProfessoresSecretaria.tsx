@@ -23,6 +23,8 @@ export default function GestaoProfessoresSecretaria() {
   const [editId, setEditId] = useState<string | null>(null);
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
   const [disciplinas, setDisciplinas] = useState('');
   const [escolasSel, setEscolasSel] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +43,7 @@ export default function GestaoProfessoresSecretaria() {
   const filtered = lista.filter(p => !filtroNome || p.usuario?.nome?.toLowerCase().includes(filtroNome.toLowerCase()));
 
   const resetForm = () => {
-    setNome(''); setCpf(''); setDisciplinas(''); setEscolasSel([]);
+    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinas(''); setEscolasSel([]);
     setShowModal(false); setEditId(null);
   };
 
@@ -50,6 +52,8 @@ export default function GestaoProfessoresSecretaria() {
     if (!p) return;
     setNome(p.usuario?.nome || '');
     setCpf(p.usuario?.cpf || '');
+    setEmail(p.usuario?.email || '');
+    setSenha('');
     setDisciplinas('Geral');
     const escolaIds = (p.escolas || []).map((pe: any) => pe.escola?.id).filter(Boolean);
     setEscolasSel(escolaIds);
@@ -70,14 +74,17 @@ export default function GestaoProfessoresSecretaria() {
     if (editId) {
       const p = lista.find(x => x.id === editId);
       if (p?.usuario?.id) {
-        await supabase.from('usuarios').update({ nome, cpf }).eq('id', p.usuario.id);
+        await supabase.from('usuarios').update({ nome, cpf, email: email.trim() || null }).eq('id', p.usuario.id);
         await supabase.from('professor_escolas').delete().eq('professor_id', editId);
         await supabase.from('professor_escolas').insert(escolasSel.map(eId => ({ professor_id: editId, escola_id: eId })));
       }
       toast.success('Professor atualizado com sucesso!');
     } else {
+      if (!email.trim()) { toast.error('E-mail é obrigatório para criar credenciais de acesso.'); setLoading(false); return; }
+      if (!senha || senha.length < 6) { toast.error('Senha deve ter ao menos 6 caracteres.'); setLoading(false); return; }
+
       const { data: usuario, error: uErr } = await supabase.from('usuarios').insert({
-        nome, cpf, papel: 'PROFESSOR', email: `${cpf.replace(/\D/g, '')}@professor.local`,
+        nome, cpf, papel: 'PROFESSOR', email: email.trim(),
       }).select().single();
       if (uErr) { toast.error('Erro ao criar usuário: ' + uErr.message); setLoading(false); return; }
 
@@ -87,7 +94,16 @@ export default function GestaoProfessoresSecretaria() {
       if (pErr) { toast.error('Erro ao criar professor: ' + pErr.message); setLoading(false); return; }
 
       await supabase.from('professor_escolas').insert(escolasSel.map(eId => ({ professor_id: prof.id, escola_id: eId })));
-      toast.success(`Professor "${nome}" cadastrado com sucesso!`);
+
+      // Create auth credentials
+      const { data: authResult, error: authErr } = await supabase.functions.invoke('create-user', {
+        body: { usuario_id: usuario.id, email: email.trim(), password: senha },
+      });
+      if (authErr || authResult?.error) {
+        toast.warning(`Professor criado, mas houve erro ao criar credenciais: ${authResult?.error || authErr?.message}`);
+      } else {
+        toast.success(`Professor "${nome}" cadastrado com credenciais de acesso!`);
+      }
     }
 
     setLoading(false);
@@ -96,7 +112,7 @@ export default function GestaoProfessoresSecretaria() {
   };
 
   const openNew = () => {
-    setNome(''); setCpf(''); setDisciplinas(''); setEscolasSel([]);
+    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinas(''); setEscolasSel([]);
     setEditId(null); setShowModal(true);
   };
 
@@ -128,6 +144,7 @@ export default function GestaoProfessoresSecretaria() {
               <thead><tr className="border-b bg-secondary">
                 <th className="text-left p-3 text-sm font-medium">Nome</th>
                 <th className="text-left p-3 text-sm font-medium">CPF</th>
+                <th className="text-left p-3 text-sm font-medium">E-mail</th>
                 <th className="text-left p-3 text-sm font-medium">Escolas</th>
                 <th className="text-left p-3 text-sm font-medium">Ações</th>
               </tr></thead>
@@ -138,6 +155,7 @@ export default function GestaoProfessoresSecretaria() {
                     <tr key={p.id} className="border-b">
                       <td className="p-3 text-sm font-medium">{p.usuario?.nome || 'Desconhecido'}</td>
                       <td className="p-3 text-sm">{p.usuario?.cpf || 'Desconhecido'}</td>
+                      <td className="p-3 text-sm">{p.usuario?.email || 'ND'}</td>
                       <td className="p-3 text-sm">{escolasProf.join(', ')}</td>
                       <td className="p-3">
                         <Button variant="secondary" size="sm" onClick={() => openEdit(p.id)}>Editar</Button>
@@ -166,6 +184,16 @@ export default function GestaoProfessoresSecretaria() {
               <Label htmlFor="prof-cpf">CPF *</Label>
               <Input id="prof-cpf" value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} required placeholder="000.000.000-00" maxLength={14} />
             </div>
+            <div>
+              <Label htmlFor="prof-email">E-mail * {editId && <span className="text-xs text-muted-foreground">(opcional na edição)</span>}</Label>
+              <Input id="prof-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required={!editId} placeholder="email@exemplo.com" />
+            </div>
+            {!editId && (
+              <div>
+                <Label htmlFor="prof-senha">Senha de Acesso *</Label>
+                <Input id="prof-senha" type="password" value={senha} onChange={e => setSenha(e.target.value)} required placeholder="Mínimo 6 caracteres" minLength={6} />
+              </div>
+            )}
             <div>
               <Label htmlFor="prof-disc">Disciplinas</Label>
               <Input id="prof-disc" value={disciplinas} onChange={e => setDisciplinas(e.target.value)} placeholder="Matemática, Ciências" />

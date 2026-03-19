@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -59,18 +60,39 @@ import RelatoriosSecretaria from "./pages/secretaria/RelatoriosSecretaria";
 const queryClient = new QueryClient();
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { perfil } = useAuth();
+  const { perfil, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (!perfil) return <Navigate to="/login" replace />;
   return <AppLayout>{children}</AppLayout>;
 }
 
 function AppRoutes() {
-  const { perfil } = useAuth();
+  const { perfil, loading } = useAuth();
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/" element={perfil ? <Navigate to={`/${perfil}`} replace /> : <Navigate to="/login" replace />} />
+      <Route path="/login" element={
+        loading ? (
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : perfil ? <Navigate to={`/${perfil}`} replace /> : <Login />
+      } />
+      <Route path="/" element={
+        loading ? (
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : perfil ? <Navigate to={`/${perfil}`} replace /> : <Navigate to="/login" replace />
+      } />
 
       {/* Responsável */}
       <Route path="/responsavel" element={<ProtectedLayout><PainelDependentes /></ProtectedLayout>} />

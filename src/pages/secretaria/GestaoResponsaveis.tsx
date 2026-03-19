@@ -24,6 +24,7 @@ export default function GestaoResponsaveis() {
   const [cpf, setCpf] = useState('');
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -48,17 +49,19 @@ export default function GestaoResponsaveis() {
   };
 
   const resetCreationForm = () => {
-    setNome(''); setCpf(''); setTelefone(''); setEmail('');
+    setNome(''); setCpf(''); setTelefone(''); setEmail(''); setSenha('');
     setShowModal(false);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateCpf(cpf)) { toast.error('CPF inválido. Verifique os dígitos.'); return; }
+    if (!email.trim()) { toast.error('E-mail é obrigatório para criar credenciais de acesso.'); return; }
+    if (!senha || senha.length < 6) { toast.error('Senha deve ter ao menos 6 caracteres.'); return; }
     setLoading(true);
 
     const { data: usuario, error: uErr } = await supabase.from('usuarios').insert({
-      nome, cpf, papel: 'RESPONSAVEL', email: email.trim() || `${cpf.replace(/\D/g, '')}@responsavel.local`,
+      nome, cpf, papel: 'RESPONSAVEL', email: email.trim(),
     }).select().single();
     if (uErr) { toast.error('Erro ao criar usuário: ' + uErr.message); setLoading(false); return; }
 
@@ -67,14 +70,23 @@ export default function GestaoResponsaveis() {
     });
     if (rErr) { toast.error('Erro ao criar responsável: ' + rErr.message); setLoading(false); return; }
 
-    toast.success(`Responsável "${nome}" cadastrado com sucesso!`);
+    // Create auth credentials
+    const { data: authResult, error: authErr } = await supabase.functions.invoke('create-user', {
+      body: { usuario_id: usuario.id, email: email.trim(), password: senha },
+    });
+    if (authErr || authResult?.error) {
+      toast.warning(`Responsável criado, mas houve erro ao criar credenciais: ${authResult?.error || authErr?.message}`);
+    } else {
+      toast.success(`Responsável "${nome}" cadastrado com credenciais de acesso!`);
+    }
+
     setLoading(false);
     resetCreationForm();
     fetchData();
   };
 
   const openNew = () => {
-    setNome(''); setCpf(''); setTelefone(''); setEmail('');
+    setNome(''); setCpf(''); setTelefone(''); setEmail(''); setSenha('');
     setShowModal(true);
   };
 
@@ -106,6 +118,7 @@ export default function GestaoResponsaveis() {
               <thead><tr className="border-b bg-secondary">
                 <th className="text-left p-3 text-sm font-medium">Nome</th>
                 <th className="text-left p-3 text-sm font-medium">CPF</th>
+                <th className="text-left p-3 text-sm font-medium">E-mail</th>
                 <th className="text-left p-3 text-sm font-medium">Telefone</th>
                 <th className="text-left p-3 text-sm font-medium">Ações</th>
               </tr></thead>
@@ -116,6 +129,7 @@ export default function GestaoResponsaveis() {
                     <tr key={r.id} className="border-b">
                       <td className="p-3 text-sm font-medium">{nomeR}</td>
                       <td className="p-3 text-sm">{r.usuario?.cpf || 'ND'}</td>
+                      <td className="p-3 text-sm">{r.usuario?.email || 'ND'}</td>
                       <td className="p-3 text-sm">{r.telefone || 'ND'}</td>
                       <td className="p-3 flex gap-1">
                         <Button variant="secondary" size="sm" onClick={() => toast.info('Edição em desenvolvimento')}>Editar</Button>
@@ -161,15 +175,19 @@ export default function GestaoResponsaveis() {
               <Input id="resp-cpf" value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} required placeholder="000.000.000-00" maxLength={14} />
             </div>
             <div>
+              <Label htmlFor="resp-email">E-mail *</Label>
+              <Input id="resp-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="email@exemplo.com" />
+            </div>
+            <div>
+              <Label htmlFor="resp-senha">Senha de Acesso *</Label>
+              <Input id="resp-senha" type="password" value={senha} onChange={e => setSenha(e.target.value)} required placeholder="Mínimo 6 caracteres" minLength={6} />
+            </div>
+            <div>
               <Label htmlFor="resp-tel">Telefone</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input id="resp-tel" value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(00) 00000-0000" className="pl-9" />
               </div>
-            </div>
-            <div>
-              <Label htmlFor="resp-email">E-mail</Label>
-              <Input id="resp-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@exemplo.com" />
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancelar</Button>
