@@ -51,6 +51,10 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   const [nomeEdit, setNomeEdit] = useState('');
   const [dataNascEdit, setDataNascEdit] = useState<Date | undefined>(undefined);
 
+  // Modal de mudança de turma com motivo
+  const [modalTurma, setModalTurma] = useState(false);
+  const [observacaoTurma, setObservacaoTurma] = useState('');
+
   const fetchData = useCallback(async () => {
     if (!alunoId) return;
 
@@ -103,11 +107,30 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   if (!aluno) return <div className="p-6">Carregando aluno...</div>;
 
   const handleSalvarTurma = async () => {
+    const turmaChanged = (turmaId || null) !== (aluno.turma_id || null);
     const { error } = await supabase.from('alunos').update({ turma_id: turmaId || null }).eq('id', aluno.id);
     if (error) {
       toast.error('Erro ao atualizar turma: ' + error.message);
     } else {
+      // If turma changed and there's an observacao, update the latest history record
+      if (turmaChanged && observacaoTurma.trim()) {
+        const { data: latestHist } = await supabase
+          .from('aluno_turma_historico')
+          .select('id')
+          .eq('aluno_id', aluno.id)
+          .is('data_fim', null)
+          .order('data_inicio', { ascending: false })
+          .limit(1)
+          .single();
+        if (latestHist) {
+          await supabase.from('aluno_turma_historico').update({ observacao: observacaoTurma.trim() }).eq('id', latestHist.id);
+        }
+      }
       toast.success('Turma do aluno atualizada com sucesso!');
+      setAluno({ ...aluno, turma_id: turmaId || null });
+      setModalTurma(false);
+      setObservacaoTurma('');
+      fetchData();
     }
   };
 
@@ -285,7 +308,15 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                       <Button variant="outline" onClick={() => setEditandoDados(true)}>
                         <Pencil className="w-4 h-4" /> Editar Dados
                       </Button>
-                      <Button onClick={handleSalvarTurma}>
+                      <Button
+                        onClick={() => {
+                          if ((turmaId || null) !== (aluno.turma_id || null)) {
+                            setModalTurma(true);
+                          } else {
+                            toast.info('Nenhuma alteração de turma detectada.');
+                          }
+                        }}
+                      >
                         <Save className="w-4 h-4" /> Salvar Turma
                       </Button>
                     </>
@@ -397,6 +428,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                         <th className="text-left p-3 text-sm font-medium">Série</th>
                         <th className="text-left p-3 text-sm font-medium">Início</th>
                         <th className="text-left p-3 text-sm font-medium">Fim</th>
+                        <th className="text-left p-3 text-sm font-medium">Observação</th>
                         <th className="text-left p-3 text-sm font-medium">Status</th>
                       </tr>
                     </thead>
@@ -407,6 +439,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                           <td className="p-3 text-sm">{h.serie_nome || '—'}</td>
                           <td className="p-3 text-sm">{format(new Date(h.data_inicio), 'dd/MM/yyyy')}</td>
                           <td className="p-3 text-sm">{h.data_fim ? format(new Date(h.data_fim), 'dd/MM/yyyy') : '—'}</td>
+                          <td className="p-3 text-sm text-muted-foreground">{h.observacao || '—'}</td>
                           <td className="p-3">
                             {h.data_fim ? (
                               <Badge variant="secondary">Encerrado</Badge>
@@ -443,6 +476,39 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
         confirmLabel="Desvincular"
         variant="destructive"
       />
+
+      {/* Modal de mudança de turma com observação */}
+      <Dialog open={modalTurma} onOpenChange={(open) => { setModalTurma(open); if (!open) setObservacaoTurma(''); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Mudança de Turma</DialogTitle>
+            <DialogDescription>Informe o motivo da mudança de turma (opcional).</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label className="text-sm">Nova Turma</Label>
+              <Input value={turmas.find(t => t.id === turmaId)?.nome || 'Sem turma'} readOnly className="mt-1 bg-muted" />
+            </div>
+            <div>
+              <Label className="text-sm">Observação / Motivo</Label>
+              <textarea
+                value={observacaoTurma}
+                onChange={e => setObservacaoTurma(e.target.value)}
+                placeholder="Ex: Transferência por solicitação da família..."
+                rows={3}
+                className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-sm border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setModalTurma(false); setObservacaoTurma(''); }}>Cancelar</Button>
+            <Button onClick={handleSalvarTurma}>
+              <Save className="w-4 h-4" /> Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {!readOnly && (
         <Dialog open={vincularModalOpen} onOpenChange={setVincularModalOpen}>
