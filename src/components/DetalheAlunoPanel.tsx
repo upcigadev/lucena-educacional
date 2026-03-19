@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
-import { ArrowLeft, Save, Search, UserPlus, UserMinus, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Save, Search, UserPlus, UserMinus, MessageSquare, Pencil, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,10 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   // Aviso modal (read-only mode)
   const [modalAviso, setModalAviso] = useState(false);
   const [aviso, setAviso] = useState('');
+
+  // Edição de parentesco inline
+  const [editandoVinculoId, setEditandoVinculoId] = useState<string | null>(null);
+  const [parentescoEdit, setParentescoEdit] = useState('');
 
   const fetchData = useCallback(async () => {
     if (!alunoId) return;
@@ -101,6 +105,17 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
     } else {
       toast.success('Responsável desvinculado.');
       setVinculos(prev => prev.filter(v => v.id !== vinculoId));
+    }
+  };
+
+  const handleSalvarParentesco = async (vinculoId: string) => {
+    const { error } = await supabase.from('aluno_responsaveis').update({ parentesco: parentescoEdit }).eq('id', vinculoId);
+    if (error) {
+      toast.error('Erro ao atualizar parentesco: ' + error.message);
+    } else {
+      toast.success('Parentesco atualizado!');
+      setVinculos(prev => prev.map(v => v.id === vinculoId ? { ...v, parentesco: parentescoEdit } : v));
+      setEditandoVinculoId(null);
     }
   };
 
@@ -219,7 +234,33 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
                       <td className="p-3 text-sm">{r.usuario?.cpf}</td>
                       <td className="p-3 text-sm">{r.telefone || ''}</td>
                       <td className="p-3">
-                        <Badge variant="secondary">{r.parentesco || 'Responsável'}</Badge>
+                        {editandoVinculoId === r.vinculoId ? (
+                          <div className="flex items-center gap-1">
+                            <select
+                              value={parentescoEdit}
+                              onChange={e => setParentescoEdit(e.target.value)}
+                              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                            >
+                              {PARENTESCO_OPTIONS.map(p => (
+                                <option key={p} value={p}>{p}</option>
+                              ))}
+                            </select>
+                            <button onClick={() => handleSalvarParentesco(r.vinculoId)} className="p-1 text-primary hover:opacity-80"><Check className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setEditandoVinculoId(null)} className="p-1 text-muted-foreground hover:opacity-80"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="secondary">{r.parentesco || 'Responsável'}</Badge>
+                            {!readOnly && (
+                              <button
+                                onClick={() => { setEditandoVinculoId(r.vinculoId); setParentescoEdit(r.parentesco || 'Responsável'); }}
+                                className="p-1 text-muted-foreground hover:text-primary"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3">
                         {readOnly ? (
