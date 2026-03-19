@@ -25,7 +25,7 @@ export default function GestaoProfessoresSecretaria() {
   const [cpf, setCpf] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [disciplinas, setDisciplinas] = useState('');
+  const [disciplinasSel, setDisciplinasSel] = useState<string[]>([]);
   const [escolasSel, setEscolasSel] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +43,7 @@ export default function GestaoProfessoresSecretaria() {
   const filtered = lista.filter(p => !filtroNome || p.usuario?.nome?.toLowerCase().includes(filtroNome.toLowerCase()));
 
   const resetForm = () => {
-    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinas(''); setEscolasSel([]);
+    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinasSel([]); setEscolasSel([]);
     setShowModal(false); setEditId(null);
   };
 
@@ -54,7 +54,7 @@ export default function GestaoProfessoresSecretaria() {
     setCpf(p.usuario?.cpf || '');
     setEmail(p.usuario?.email || '');
     setSenha('');
-    setDisciplinas('Geral');
+    setDisciplinasSel(['Assuntos Gerais']);
     const escolaIds = (p.escolas || []).map((pe: any) => pe.escola?.id).filter(Boolean);
     setEscolasSel(escolaIds);
     setEditId(id);
@@ -112,7 +112,7 @@ export default function GestaoProfessoresSecretaria() {
   };
 
   const openNew = () => {
-    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinas(''); setEscolasSel([]);
+    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinasSel([]); setEscolasSel([]);
     setEditId(null); setShowModal(true);
   };
 
@@ -195,8 +195,22 @@ export default function GestaoProfessoresSecretaria() {
               </div>
             )}
             <div>
-              <Label htmlFor="prof-disc">Disciplinas</Label>
-              <Input id="prof-disc" value={disciplinas} onChange={e => setDisciplinas(e.target.value)} placeholder="Matemática, Ciências" />
+              <Label>Disciplinas</Label>
+              <div className="space-y-2 border rounded-md p-3 bg-background max-h-40 overflow-y-auto mt-1">
+                {[
+                  'Assuntos Gerais', 'Português', 'Matemática', 'Ciências', 'História',
+                  'Geografia', 'Educação Física', 'Artes', 'Inglês', 'Ensino Religioso',
+                  'Informática', 'Música', 'Redação',
+                ].map(disc => (
+                  <label key={disc} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={disciplinasSel.includes(disc)}
+                      onCheckedChange={() => setDisciplinasSel(prev => prev.includes(disc) ? prev.filter(d => d !== disc) : [...prev, disc])}
+                    />
+                    <span>{disc}</span>
+                  </label>
+                ))}
+              </div>
             </div>
             <div>
               <Label>Escola(s) vinculada(s) *</Label>
