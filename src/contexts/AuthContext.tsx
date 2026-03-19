@@ -88,18 +88,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (cpf: string, password: string): Promise<{ error?: string }> => {
-    // 1. Look up the user's email by CPF
-    const { data: usuarioData, error: lookupError } = await supabase
-      .from('usuarios')
-      .select('email, auth_id')
-      .eq('cpf', cpf)
-      .single();
+    // 1. Look up the user's email by CPF using secure RPC
+    const { data: lookupData, error: lookupError } = await supabase
+      .rpc('lookup_email_by_cpf', { _cpf: cpf });
+
+    const usuarioData = lookupData?.[0];
 
     if (lookupError || !usuarioData) {
       return { error: 'CPF não encontrado no sistema.' };
     }
 
-    if (!usuarioData.auth_id) {
+    if (!usuarioData.has_auth) {
       return { error: 'Este usuário ainda não possui credenciais de acesso. Contate a Secretaria.' };
     }
 
