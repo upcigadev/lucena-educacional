@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { formatCpf, validateCpf } from '@/lib/masks';
+import { supabase } from '@/integrations/supabase/client';
 import { UserCog, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,15 +23,18 @@ export default function GestaoDiretores() {
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
   const [escolasSel, setEscolasSel] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      window.api?.diretor?.listar?.() || Promise.resolve([]),
-      window.api?.escola?.listar?.() || Promise.resolve([])
-    ]).then(([d, e]) => {
-      setLista(d); setEscolas(e);
-    });
-  }, []);
+  const fetchData = async () => {
+    const [{ data: diretores }, { data: escolasData }] = await Promise.all([
+      supabase.from('diretores').select('*, usuario:usuarios(*), escola:escolas(*)'),
+      supabase.from('escolas').select('*').order('nome'),
+    ]);
+    setLista(diretores || []);
+    setEscolas(escolasData || []);
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const resetForm = () => {
     setNome(''); setCpf(''); setEscolasSel([]);
@@ -42,7 +46,7 @@ export default function GestaoDiretores() {
     if (!d) return;
     setNome(d.usuario?.nome || '');
     setCpf(d.usuario?.cpf || '');
-    setEscolasSel(d.escolaId ? [d.escolaId] : []);
+    setEscolasSel(d.escola_id ? [d.escola_id] : []);
     setEditId(id);
     setShowModal(true);
   };
@@ -51,18 +55,40 @@ export default function GestaoDiretores() {
     setEscolasSel(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateCpf(cpf)) { toast.error('CPF inválido. Verifique os dígitos.'); return; }
     if (escolasSel.length === 0) { toast.error('Selecione ao menos uma escola.'); return; }
-    toast.success(editId ? 'Diretor atualizado com sucesso!' : `Diretor "${nome}" cadastrado com sucesso!`);
+    setLoading(true);
+
+    if (editId) {
+      const d = lista.find(x => x.id === editId);
+      if (d?.usuario?.id) {
+        await supabase.from('usuarios').update({ nome, cpf }).eq('id', d.usuario.id);
+        await supabase.from('diretores').update({ escola_id: escolasSel[0] }).eq('id', editId);
+      }
+      toast.success('Diretor atualizado com sucesso!');
+    } else {
+      const { data: usuario, error: uErr } = await supabase.from('usuarios').insert({
+        nome, cpf, papel: 'DIRETOR', email: `${cpf.replace(/\D/g, '')}@diretor.local`,
+      }).select().single();
+      if (uErr) { toast.error('Erro ao criar usuário: ' + uErr.message); setLoading(false); return; }
+
+      const { error: dErr } = await supabase.from('diretores').insert({
+        usuario_id: usuario.id, escola_id: escolasSel[0],
+      });
+      if (dErr) { toast.error('Erro ao criar diretor: ' + dErr.message); setLoading(false); return; }
+      toast.success(`Diretor "${nome}" cadastrado com sucesso!`);
+    }
+
+    setLoading(false);
     resetForm();
+    fetchData();
   };
 
   const openNew = () => {
     setNome(''); setCpf(''); setEscolasSel([]);
-    setEditId(null);
-    setShowModal(true);
+    setEditId(null); setShowModal(true);
   };
 
   return (
@@ -70,10 +96,7 @@ export default function GestaoDiretores() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">Gestão de Diretores</h1>
         {lista.length > 0 && (
-          <Button onClick={openNew}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Diretor
-          </Button>
+          <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Novo Diretor</Button>
         )}
       </div>
 
@@ -85,19 +108,16 @@ export default function GestaoDiretores() {
             </div>
             <h2 className="text-lg font-semibold text-card-foreground mb-2">Nenhum diretor cadastrado</h2>
             <p className="text-sm text-muted-foreground mb-6">Cadastre o primeiro diretor para vinculá-lo a uma escola do município.</p>
-            <Button size="lg" onClick={openNew}>
-              <Plus className="w-4 h-4 mr-2" />
-              Cadastrar Primeiro Diretor
-            </Button>
+            <Button size="lg" onClick={openNew}><Plus className="w-4 h-4 mr-2" />Cadastrar Primeiro Diretor</Button>
           </div>
         </div>
       ) : (
         <div className="bg-card rounded-lg border overflow-hidden">
-          <table className="w-full table-striped">
+          <table className="w-full">
             <thead><tr className="border-b bg-secondary">
               <th className="text-left p-3 text-sm font-medium">Nome</th>
               <th className="text-left p-3 text-sm font-medium">CPF</th>
-              <th className="text-left p-3 text-sm font-medium">Escola(s)</th>
+              <th className="text-left p-3 text-sm font-medium">Escola</th>
               <th className="text-left p-3 text-sm font-medium">Ações</th>
             </tr></thead>
             <tbody>
@@ -132,7 +152,7 @@ export default function GestaoDiretores() {
               <Input id="dir-cpf" value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} required placeholder="000.000.000-00" maxLength={14} />
             </div>
             <div>
-              <Label>Escola(s) vinculada(s) *</Label>
+              <Label>Escola vinculada *</Label>
               <div className="space-y-2 border rounded-md p-3 bg-background max-h-40 overflow-y-auto mt-1">
                 {escolas.map((e: any) => (
                   <label key={e.id} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -145,7 +165,7 @@ export default function GestaoDiretores() {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancelar</Button>
-              <Button type="submit">{editId ? 'Salvar' : 'Cadastrar'}</Button>
+              <Button type="submit" disabled={loading}>{loading ? 'Salvando...' : editId ? 'Salvar' : 'Cadastrar'}</Button>
             </div>
           </form>
         </DialogContent>
