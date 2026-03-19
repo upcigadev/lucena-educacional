@@ -59,7 +59,7 @@ import RelatoriosSecretaria from "./pages/secretaria/RelatoriosSecretaria";
 
 const queryClient = new QueryClient();
 
-function ProtectedLayout({ children }: { children: React.ReactNode }) {
+function ProtectedLayout({ children, allowedPerfis }: { children: React.ReactNode; allowedPerfis?: PerfilUsuario[] }) {
   const { perfil, loading } = useAuth();
 
   if (loading) {
@@ -71,6 +71,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!perfil) return <Navigate to="/login" replace />;
+  if (allowedPerfis && !allowedPerfis.includes(perfil)) return <Navigate to={`/${perfil}`} replace />;
   return <AppLayout>{children}</AppLayout>;
 }
 
