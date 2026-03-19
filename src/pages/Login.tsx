@@ -1,28 +1,40 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, PerfilUsuario } from '@/contexts/AuthContext';
-import { School } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import logo from '@/assets/logo-educacional.png';
 import { formatCpf } from '@/lib/masks';
-
-const perfis: { value: PerfilUsuario; label: string; desc: string }[] = [
-  { value: 'responsavel', label: 'Responsável', desc: 'Acompanhe a frequência dos seus filhos' },
-  { value: 'professor', label: 'Professor', desc: 'Gerencie turmas e alunos' },
-  { value: 'diretor', label: 'Diretor', desc: 'Administre sua escola' },
-  { value: 'secretaria', label: 'Secretaria', desc: 'Gestão municipal de educação' },
-];
+import { Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [cpf, setCpf] = useState('');
   const [senha, setSenha] = useState('');
-  const [perfilSelecionado, setPerfilSelecionado] = useState<PerfilUsuario>('responsavel');
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(perfilSelecionado);
-    navigate('/' + perfilSelecionado);
+    setErro('');
+
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) {
+      setErro('CPF inválido.');
+      return;
+    }
+    if (!senha) {
+      setErro('Informe a senha.');
+      return;
+    }
+
+    setLoading(true);
+    const result = await login(cpf, senha);
+    setLoading(false);
+
+    if (result.error) {
+      setErro(result.error);
+    }
+    // Navigation happens via useEffect in App when perfil changes
   };
 
   return (
@@ -38,13 +50,20 @@ export default function Login() {
         {/* Login Card */}
         <div className="bg-card rounded-lg shadow-lg border p-6">
           <form onSubmit={handleSubmit}>
+            {erro && (
+              <div className="mb-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/20">
+                {erro}
+              </div>
+            )}
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-card-foreground mb-1.5">CPF</label>
               <input
                 type="text"
                 value={cpf}
-                onChange={e => setCpf(formatCpf(e.target.value))}
+                onChange={e => { setCpf(formatCpf(e.target.value)); setErro(''); }}
                 placeholder="000.000.000-00"
+                maxLength={14}
                 className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -54,41 +73,19 @@ export default function Login() {
               <input
                 type="password"
                 value={senha}
-                onChange={e => setSenha(e.target.value)}
+                onChange={e => { setSenha(e.target.value); setErro(''); }}
                 placeholder="••••••••"
                 className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
-            {/* Profile Selector */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-card-foreground mb-2">
-                Perfil de Acesso <span className="text-xs text-muted-foreground">(demonstração)</span>
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {perfis.map(p => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => setPerfilSelecionado(p.value)}
-                    className={`p-3 rounded-md border text-left transition-all ${
-                      perfilSelecionado === p.value
-                        ? 'border-primary bg-secondary ring-2 ring-ring'
-                        : 'border-border hover:bg-secondary/50'
-                    }`}
-                  >
-                    <div className="text-sm font-medium text-card-foreground">{p.label}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{p.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <button
-               type="submit"
-               className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:opacity-90 transition-opacity"
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              Entrar
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
         </div>

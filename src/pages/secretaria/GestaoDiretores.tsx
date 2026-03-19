@@ -22,6 +22,8 @@ export default function GestaoDiretores() {
   const [editId, setEditId] = useState<string | null>(null);
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
   const [escolasSel, setEscolasSel] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +39,7 @@ export default function GestaoDiretores() {
   useEffect(() => { fetchData(); }, []);
 
   const resetForm = () => {
-    setNome(''); setCpf(''); setEscolasSel([]);
+    setNome(''); setCpf(''); setEmail(''); setSenha(''); setEscolasSel([]);
     setShowModal(false); setEditId(null);
   };
 
@@ -46,6 +48,8 @@ export default function GestaoDiretores() {
     if (!d) return;
     setNome(d.usuario?.nome || '');
     setCpf(d.usuario?.cpf || '');
+    setEmail(d.usuario?.email || '');
+    setSenha('');
     setEscolasSel(d.escola_id ? [d.escola_id] : []);
     setEditId(id);
     setShowModal(true);
@@ -64,21 +68,33 @@ export default function GestaoDiretores() {
     if (editId) {
       const d = lista.find(x => x.id === editId);
       if (d?.usuario?.id) {
-        await supabase.from('usuarios').update({ nome, cpf }).eq('id', d.usuario.id);
+        await supabase.from('usuarios').update({ nome, cpf, email: email.trim() || null }).eq('id', d.usuario.id);
         await supabase.from('diretores').update({ escola_id: escolasSel[0] }).eq('id', editId);
       }
       toast.success('Diretor atualizado com sucesso!');
     } else {
+      if (!email.trim()) { toast.error('E-mail é obrigatório para criar credenciais de acesso.'); setLoading(false); return; }
+      if (!senha || senha.length < 6) { toast.error('Senha deve ter ao menos 6 caracteres.'); setLoading(false); return; }
+
       const { data: usuario, error: uErr } = await supabase.from('usuarios').insert({
-        nome, cpf, papel: 'DIRETOR', email: `${cpf.replace(/\D/g, '')}@diretor.local`,
+        nome, cpf, papel: 'DIRETOR', email: email.trim(),
       }).select().single();
       if (uErr) { toast.error('Erro ao criar usuário: ' + uErr.message); setLoading(false); return; }
 
-      const { error: dErr } = await supabase.from('diretores').insert({
+      const { data: dData, error: dErr } = await supabase.from('diretores').insert({
         usuario_id: usuario.id, escola_id: escolasSel[0],
-      });
+      }).select().single();
       if (dErr) { toast.error('Erro ao criar diretor: ' + dErr.message); setLoading(false); return; }
-      toast.success(`Diretor "${nome}" cadastrado com sucesso!`);
+
+      // Create auth credentials
+      const { data: authResult, error: authErr } = await supabase.functions.invoke('create-user', {
+        body: { usuario_id: usuario.id, email: email.trim(), password: senha },
+      });
+      if (authErr || authResult?.error) {
+        toast.warning(`Diretor criado, mas houve erro ao criar credenciais: ${authResult?.error || authErr?.message}. O diretor não poderá fazer login.`);
+      } else {
+        toast.success(`Diretor "${nome}" cadastrado com credenciais de acesso!`);
+      }
     }
 
     setLoading(false);
@@ -87,7 +103,7 @@ export default function GestaoDiretores() {
   };
 
   const openNew = () => {
-    setNome(''); setCpf(''); setEscolasSel([]);
+    setNome(''); setCpf(''); setEmail(''); setSenha(''); setEscolasSel([]);
     setEditId(null); setShowModal(true);
   };
 
@@ -117,6 +133,7 @@ export default function GestaoDiretores() {
             <thead><tr className="border-b bg-secondary">
               <th className="text-left p-3 text-sm font-medium">Nome</th>
               <th className="text-left p-3 text-sm font-medium">CPF</th>
+              <th className="text-left p-3 text-sm font-medium">E-mail</th>
               <th className="text-left p-3 text-sm font-medium">Escola</th>
               <th className="text-left p-3 text-sm font-medium">Ações</th>
             </tr></thead>
@@ -125,6 +142,7 @@ export default function GestaoDiretores() {
                 <tr key={d.id} className="border-b">
                   <td className="p-3 text-sm font-medium">{d.usuario?.nome}</td>
                   <td className="p-3 text-sm">{d.usuario?.cpf}</td>
+                  <td className="p-3 text-sm">{d.usuario?.email || 'ND'}</td>
                   <td className="p-3 text-sm">{d.escola?.nome || ''}</td>
                   <td className="p-3">
                     <Button variant="secondary" size="sm" onClick={() => openEdit(d.id)}>Editar</Button>
@@ -151,6 +169,16 @@ export default function GestaoDiretores() {
               <Label htmlFor="dir-cpf">CPF *</Label>
               <Input id="dir-cpf" value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} required placeholder="000.000.000-00" maxLength={14} />
             </div>
+            <div>
+              <Label htmlFor="dir-email">E-mail * {editId && <span className="text-xs text-muted-foreground">(opcional na edição)</span>}</Label>
+              <Input id="dir-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required={!editId} placeholder="email@exemplo.com" />
+            </div>
+            {!editId && (
+              <div>
+                <Label htmlFor="dir-senha">Senha de Acesso *</Label>
+                <Input id="dir-senha" type="password" value={senha} onChange={e => setSenha(e.target.value)} required placeholder="Mínimo 6 caracteres" minLength={6} />
+              </div>
+            )}
             <div>
               <Label>Escola vinculada *</Label>
               <div className="space-y-2 border rounded-md p-3 bg-background max-h-40 overflow-y-auto mt-1">

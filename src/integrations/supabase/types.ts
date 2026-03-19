@@ -159,6 +159,7 @@ export type Database = {
       usuarios: {
         Row: {
           ativo: boolean
+          auth_id: string | null
           cpf: string
           created_at: string
           email: string | null
@@ -168,6 +169,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          auth_id?: string | null
           cpf: string
           created_at?: string
           email?: string | null
@@ -177,6 +179,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          auth_id?: string | null
           cpf?: string
           created_at?: string
           email?: string | null

@@ -56,20 +56,20 @@ const nomesPerfil: Record<PerfilUsuario, string> = {
 };
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { perfil, nomeUsuario, logout } = useAuth();
+  const { perfil, nomeUsuario, logout, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  if (!perfil) return null;
+  if (loading || !perfil) return null;
 
   const menu = menusPorPerfil[perfil];
   const notifs: any[] = [];
   const unread = notifs.filter((n: any) => !n.lida).length;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
