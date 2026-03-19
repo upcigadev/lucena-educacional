@@ -112,7 +112,7 @@ export default function GestaoProfessoresSecretaria() {
   };
 
   const openNew = () => {
-    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinas(''); setEscolasSel([]);
+    setNome(''); setCpf(''); setEmail(''); setSenha(''); setDisciplinasSel([]); setEscolasSel([]);
     setEditId(null); setShowModal(true);
   };
 
