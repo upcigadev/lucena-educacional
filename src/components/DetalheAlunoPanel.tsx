@@ -51,6 +51,10 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   const [nomeEdit, setNomeEdit] = useState('');
   const [dataNascEdit, setDataNascEdit] = useState<Date | undefined>(undefined);
 
+  // Modal de mudança de turma com motivo
+  const [modalTurma, setModalTurma] = useState(false);
+  const [observacaoTurma, setObservacaoTurma] = useState('');
+
   const fetchData = useCallback(async () => {
     if (!alunoId) return;
 
