@@ -107,11 +107,30 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   if (!aluno) return <div className="p-6">Carregando aluno...</div>;
 
   const handleSalvarTurma = async () => {
+    const turmaChanged = (turmaId || null) !== (aluno.turma_id || null);
     const { error } = await supabase.from('alunos').update({ turma_id: turmaId || null }).eq('id', aluno.id);
     if (error) {
       toast.error('Erro ao atualizar turma: ' + error.message);
     } else {
+      // If turma changed and there's an observacao, update the latest history record
+      if (turmaChanged && observacaoTurma.trim()) {
+        const { data: latestHist } = await supabase
+          .from('aluno_turma_historico')
+          .select('id')
+          .eq('aluno_id', aluno.id)
+          .is('data_fim', null)
+          .order('data_inicio', { ascending: false })
+          .limit(1)
+          .single();
+        if (latestHist) {
+          await supabase.from('aluno_turma_historico').update({ observacao: observacaoTurma.trim() }).eq('id', latestHist.id);
+        }
+      }
       toast.success('Turma do aluno atualizada com sucesso!');
+      setAluno({ ...aluno, turma_id: turmaId || null });
+      setModalTurma(false);
+      setObservacaoTurma('');
+      fetchData();
     }
   };
 
