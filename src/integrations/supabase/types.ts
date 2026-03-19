@@ -14,6 +14,64 @@ export type Database = {
   }
   public: {
     Tables: {
+      alunos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          data_nascimento: string | null
+          escola_id: string
+          id: string
+          matricula: string
+          nome_completo: string
+          responsavel_id: string | null
+          turma_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          data_nascimento?: string | null
+          escola_id: string
+          id?: string
+          matricula: string
+          nome_completo: string
+          responsavel_id?: string | null
+          turma_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          data_nascimento?: string | null
+          escola_id?: string
+          id?: string
+          matricula?: string
+          nome_completo?: string
+          responsavel_id?: string | null
+          turma_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alunos_escola_id_fkey"
+            columns: ["escola_id"]
+            isOneToOne: false
+            referencedRelation: "escolas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alunos_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alunos_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diretores: {
         Row: {
           escola_id: string
@@ -152,6 +210,128 @@ export type Database = {
             columns: ["usuario_id"]
             isOneToOne: true
             referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      series: {
+        Row: {
+          created_at: string
+          escola_id: string
+          horario_inicio: string | null
+          id: string
+          limite_max: string | null
+          nome: string
+          tolerancia_min: number | null
+        }
+        Insert: {
+          created_at?: string
+          escola_id: string
+          horario_inicio?: string | null
+          id?: string
+          limite_max?: string | null
+          nome: string
+          tolerancia_min?: number | null
+        }
+        Update: {
+          created_at?: string
+          escola_id?: string
+          horario_inicio?: string | null
+          id?: string
+          limite_max?: string | null
+          nome?: string
+          tolerancia_min?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "series_escola_id_fkey"
+            columns: ["escola_id"]
+            isOneToOne: false
+            referencedRelation: "escolas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      turma_professores: {
+        Row: {
+          id: string
+          professor_id: string
+          turma_id: string
+        }
+        Insert: {
+          id?: string
+          professor_id: string
+          turma_id: string
+        }
+        Update: {
+          id?: string
+          professor_id?: string
+          turma_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turma_professores_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "professores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turma_professores_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      turmas: {
+        Row: {
+          created_at: string
+          escola_id: string
+          horario_inicio: string | null
+          id: string
+          limite_max: string | null
+          nome: string
+          sala: string | null
+          serie_id: string
+          tolerancia_min: number | null
+        }
+        Insert: {
+          created_at?: string
+          escola_id: string
+          horario_inicio?: string | null
+          id?: string
+          limite_max?: string | null
+          nome: string
+          sala?: string | null
+          serie_id: string
+          tolerancia_min?: number | null
+        }
+        Update: {
+          created_at?: string
+          escola_id?: string
+          horario_inicio?: string | null
+          id?: string
+          limite_max?: string | null
+          nome?: string
+          sala?: string | null
+          serie_id?: string
+          tolerancia_min?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turmas_escola_id_fkey"
+            columns: ["escola_id"]
+            isOneToOne: false
+            referencedRelation: "escolas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_serie_id_fkey"
+            columns: ["serie_id"]
+            isOneToOne: false
+            referencedRelation: "series"
             referencedColumns: ["id"]
           },
         ]
