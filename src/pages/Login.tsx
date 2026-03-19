@@ -87,6 +87,12 @@ export default function Login() {
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
+
+            <div className="mt-3 text-center">
+              <Link to="/esqueceu-senha" className="text-sm text-primary hover:underline">
+                Esqueceu sua senha?
+              </Link>
+            </div>
           </form>
         </div>
 

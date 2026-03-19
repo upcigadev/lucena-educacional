@@ -89,6 +89,8 @@ function AppRoutes() {
           </div>
         ) : perfil ? <Navigate to={`/${perfil}`} replace /> : <Login />
       } />
+      <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
+      <Route path="/redefinir-senha" element={<RedefinirSenha />} />
       <Route path="/" element={
         loading ? (
           <div className="min-h-screen flex items-center justify-center bg-background">
