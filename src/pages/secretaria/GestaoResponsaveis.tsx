@@ -52,7 +52,7 @@ export default function GestaoResponsaveis() {
   }, [filtroNome, responsaveis]);
 
   const detalheResp = useMemo(() => detalheId ? responsaveis.find(r => r.id === detalheId) : null, [detalheId, responsaveis]);
-  const alunosDoResp = useMemo(() => detalheId ? alunos.filter(a => a.responsavel_id === detalheId) : [], [detalheId, alunos]);
+  const alunosDoResp = useMemo(() => detalheId ? alunoResponsaveis.filter((ar: any) => ar.responsavel_id === detalheId).map((ar: any) => ar.aluno) : [], [detalheId, alunoResponsaveis]);
 
   const handleEnviar = () => {
     toast.success('Aviso enviado ao responsável com sucesso!');
