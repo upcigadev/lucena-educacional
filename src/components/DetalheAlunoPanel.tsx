@@ -510,6 +510,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
       </Dialog>
 
 
+      {!readOnly && (
         <Dialog open={vincularModalOpen} onOpenChange={setVincularModalOpen}>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
