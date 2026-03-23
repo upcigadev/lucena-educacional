@@ -4,11 +4,13 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Camera, Upload, ShieldCheck, Loader2, CheckCircle2, X } from 'lucide-react';
+import { Camera, Upload, ShieldCheck, Loader2, CheckCircle2, X, Wifi, Fingerprint, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { cadastrarUsuarioNoAparelho, iniciarCapturaFacial, uuidToNumericId } from '@/services/controlIdService';
 
 interface BiometriaModalProps {
   open: boolean;
@@ -33,6 +35,18 @@ export function BiometriaModal({
 
   // Capture mode
   const [mode, setMode] = useState<CaptureMode>('webcam');
+
+  // iDFace IP (persisted in localStorage)
+  const LS_KEY = 'idface_ip';
+  const [ipAparelho, setIpAparelho] = useState<string>(
+    () => localStorage.getItem(LS_KEY) ?? '192.168.0.50',
+  );
+  const [idFaceLoading, setIdFaceLoading] = useState(false);
+
+  const handleIpChange = (v: string) => {
+    setIpAparelho(v);
+    localStorage.setItem(LS_KEY, v);
+  };
 
   // Webcam state
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -185,6 +199,42 @@ export function BiometriaModal({
     }
   };
 
+  // ── iDFace device activation ────────────────────────────────
+
+  const handleAtivarIdFace = useCallback(async () => {
+    if (!ipAparelho.trim()) {
+      toast.error('Informe o IP do aparelho iDFace.');
+      return;
+    }
+    setIdFaceLoading(true);
+    const idNumerico = uuidToNumericId(alunoId);
+    try {
+      await cadastrarUsuarioNoAparelho(ipAparelho.trim(), idNumerico, nomeAluno);
+      await iniciarCapturaFacial(ipAparelho.trim(), idNumerico);
+
+      // Save idface_user_id and set biometria_cadastrada
+      const { error } = await supabase
+        .from('alunos')
+        .update({ idface_user_id: idNumerico, biometria_cadastrada: true })
+        .eq('id', alunoId);
+
+      if (error) {
+        toast.error(`Supabase: ${error.message}`);
+      } else {
+        toast.success(
+          'Comando enviado! Posicione o aluno em frente ao iDFace.',
+          { duration: 6000 },
+        );
+        onSuccess?.();
+      }
+    } catch (err: any) {
+      console.error('[iDFace]', err);
+      toast.error(`Erro ao comunicar com o iDFace: ${err?.message ?? err}`);
+    } finally {
+      setIdFaceLoading(false);
+    }
+  }, [ipAparelho, alunoId, nomeAluno, onSuccess]);
+
   // ── Close / cleanup ─────────────────────────────────────────
 
   const handleFechar = () => {
@@ -211,6 +261,46 @@ export function BiometriaModal({
         </DialogHeader>
 
         <div className="space-y-5 py-2">
+        {/* iDFace Network Section */}
+          <div className="rounded-lg border p-4 space-y-3 bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-2">
+              <Wifi className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                Aparelho iDFace (Rede Local)
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Label htmlFor="idface-ip" className="text-xs text-muted-foreground mb-1 block">
+                  IP do Aparelho na Rede Local
+                </Label>
+                <Input
+                  id="idface-ip"
+                  placeholder="192.168.0.50"
+                  value={ipAparelho}
+                  onChange={(e) => handleIpChange(e.target.value)}
+                  className="font-mono text-sm"
+                />
+              </div>
+            </div>
+            <Button
+              type="button"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
+              onClick={handleAtivarIdFace}
+              disabled={idFaceLoading || !ipAparelho.trim()}
+            >
+              {idFaceLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Enviando comando...</>
+              ) : (
+                <><Fingerprint className="w-4 h-4" /> Ativar Câmera do iDFace</>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground flex items-start gap-1">
+              <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5 text-amber-500" />
+              Requer Electron instalado localmente. O IP é salvo automaticamente para a próxima vez.
+            </p>
+          </div>
+
           {/* Capture mode tabs */}
           <Tabs value={mode} onValueChange={(v) => {
             pararCamera();
