@@ -1,10 +1,12 @@
-import { app as o, BrowserWindow as n } from "electron";
-import i from "path";
-import { fileURLToPath as l } from "url";
-const r = i.dirname(l(import.meta.url)), a = process.env.NODE_ENV !== "production", s = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:8080";
-let e = null;
-function t() {
-  e = new n({
+import { app, BrowserWindow } from "electron";
+import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const isDev = process.env.NODE_ENV !== "production";
+const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:8080";
+let win = null;
+function createWindow() {
+  win = new BrowserWindow({
     width: 1280,
     height: 900,
     title: "Lucena Educacional",
@@ -13,19 +15,28 @@ function t() {
       // calls to http:// endpoints on the local network (e.g. iDFace at 192.168.x.x)
       // are NOT blocked by Chromium's mixed-content / CORS policy.
       // Production hardening: replace with a dedicated IPC handler or local proxy.
-      nodeIntegration: !0,
-      contextIsolation: !1,
-      webSecurity: !1
+      nodeIntegration: true,
+      contextIsolation: false,
+      webSecurity: false
     }
-  }), a ? (e.loadURL(s), e.webContents.openDevTools({ mode: "bottom" })) : e.loadFile(i.join(r, "../dist/index.html")), e.on("closed", () => {
-    e = null;
+  });
+  if (isDev) {
+    win.loadURL(VITE_DEV_SERVER_URL);
+    win.webContents.openDevTools({ mode: "bottom" });
+  } else {
+    win.loadFile(path.join(__dirname, "../dist/index.html"));
+  }
+  win.on("closed", () => {
+    win = null;
   });
 }
-o.whenReady().then(() => {
-  t(), o.on("activate", () => {
-    n.getAllWindows().length === 0 && t();
+app.whenReady().then(() => {
+  createWindow();
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
-o.on("window-all-closed", () => {
-  process.platform !== "darwin" && o.quit();
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
 });
+//# sourceMappingURL=main.js.map

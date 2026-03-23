@@ -1,0 +1,16 @@
+directories:
+  output: release
+  buildResources: build
+appId: br.lucena-educacional
+productName: Lucena Educacional
+files:
+  - filter:
+      - dist/**
+      - dist-electron/**
+mac:
+  target: dmg
+win:
+  target: nsis
+linux:
+  target: AppImage
+electronVersion: 41.0.3
