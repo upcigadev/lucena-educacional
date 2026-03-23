@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { listarAlunos, listarTurmas } from '@/lib/queries';
 
 export default function ListaAlunos() {
   const [alunos, setAlunos] = useState<any[]>([]);
@@ -9,11 +10,11 @@ export default function ListaAlunos() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.aluno?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([])
+      listarAlunos(),
+      listarTurmas()
     ]).then(([a, t]) => {
       setAlunos(a); setTurmas(t);
-    });
+    }).catch(console.error);
   }, []);
 
   const meusAlunos = alunos;

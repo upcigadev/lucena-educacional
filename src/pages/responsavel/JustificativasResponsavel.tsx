@@ -5,7 +5,7 @@ export default function JustificativasResponsavel() {
   const [justificativas, setJustificativas] = useState<any[]>([]);
 
   useEffect(() => {
-    window.api?.justificativa?.listar?.()?.then(setJustificativas).catch(console.error);
+    Promise.resolve([]).then(setJustificativas);
   }, []);
 
   return (

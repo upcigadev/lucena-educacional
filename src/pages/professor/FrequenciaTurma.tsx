@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { listarTurmas, listarAlunos } from '@/lib/queries';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ArrowLeft } from 'lucide-react';
 
@@ -12,11 +13,11 @@ export default function FrequenciaTurma() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.turma?.listar?.() || Promise.resolve([]),
-      window.api?.aluno?.listar?.() || Promise.resolve([])
+      listarTurmas(),
+      listarAlunos()
     ]).then(([t, a]) => {
       setTurmas(t); setAlunos(a);
-    });
+    }).catch(console.error);
   }, []);
 
   const turma = turmas.find(t => t.id === turmaId);

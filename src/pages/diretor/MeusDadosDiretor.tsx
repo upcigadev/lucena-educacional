@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { listarDiretores, listarEscolas } from '@/lib/queries';
 
 export default function MeusDadosDiretor() {
   const [diretor, setDiretor] = useState<any>(null);
@@ -6,12 +7,12 @@ export default function MeusDadosDiretor() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.diretor?.listar?.() || Promise.resolve([]),
-      window.api?.escola?.listar?.() || Promise.resolve([])
+      listarDiretores(),
+      listarEscolas()
     ]).then(([d, e]) => {
-      setDiretor(d[0]);
+      setDiretor(d[0]); // Assuming listarDiretores returns an array and we want the first one
       setEscolas(e);
-    });
+    }).catch(console.error);
   }, []);
 
   if (!diretor) return <div>Carregando...</div>;

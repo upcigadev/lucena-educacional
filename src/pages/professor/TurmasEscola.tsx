@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, BookOpen } from 'lucide-react';
+import { listarEscolas, listarTurmas } from '@/lib/queries';
 
 export default function TurmasEscola() {
   const { escolaId } = useParams();
@@ -10,11 +11,11 @@ export default function TurmasEscola() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.escola?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([])
+      listarEscolas(),
+      listarTurmas()
     ]).then(([e, t]) => {
       setEscolas(e); setTurmas(t);
-    });
+    }).catch(console.error);
   }, []);
 
   const escola = escolas.find(e => e.id === escolaId);

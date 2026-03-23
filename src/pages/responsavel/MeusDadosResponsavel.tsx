@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { listarResponsaveis, listarAlunos } from '@/lib/queries';
 
 export default function MeusDadosResponsavel() {
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
@@ -6,11 +8,11 @@ export default function MeusDadosResponsavel() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.responsavel?.listar?.() || Promise.resolve([]),
-      window.api?.aluno?.listar?.() || Promise.resolve([])
+      listarResponsaveis(),
+      listarAlunos()
     ]).then(([r, a]) => {
       setResponsaveis(r); setAlunos(a);
-    });
+    }).catch(console.error);
   }, []);
 
   const resp = responsaveis[0];

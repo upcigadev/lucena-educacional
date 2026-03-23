@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { listarEscolas, listarSeries, listarTurmas } from '@/lib/queries';
 
 export interface ReportFilterValues {
   escolaId: string;
@@ -39,14 +40,14 @@ export function ReportFilters({ values, onChange, showEscola = true, showSerie =
 
   useEffect(() => {
     Promise.all([
-      window.api?.escola?.listar?.() || Promise.resolve([]),
-      window.api?.serie?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([])
+      listarEscolas(),
+      listarSeries(),
+      listarTurmas()
     ]).then(([e, s, t]) => {
       setEscolas(e);
       setSeries(s);
       setTurmas(t);
-    });
+    }).catch(console.error);
   }, []);
 
   const availableEscolas = fixedEscolaIds ? escolas.filter(e => fixedEscolaIds.includes(e.id)) : escolas;

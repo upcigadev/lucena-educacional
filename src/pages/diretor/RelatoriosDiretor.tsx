@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileDown, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
+import { listarEscolas, listarTurmas, listarSeries, listarAlunos, listarJustificativas } from '@/lib/queries';
 
 function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
   if (filters.periodoInicio && filters.periodoFim) {
@@ -30,14 +31,14 @@ export default function RelatoriosDiretor() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.escola?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([]),
-      window.api?.serie?.listar?.() || Promise.resolve([]),
-      window.api?.aluno?.listar?.() || Promise.resolve([]),
-      window.api?.justificativa?.listar?.() || Promise.resolve([])
+      listarEscolas(),
+      listarTurmas(),
+      listarSeries(),
+      listarAlunos(),
+      listarJustificativas()
     ]).then(([e, t, s, a, j]) => {
       setEscolas(e); setTurmas(t); setSeries(s); setAlunos(a); setJustificativas(j);
-    });
+    }).catch(console.error);
   }, []);
 
   const chartEvolucaoRef = useRef<HTMLDivElement>(null);

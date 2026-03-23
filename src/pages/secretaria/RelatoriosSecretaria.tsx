@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileDown, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { listarEscolas, listarAlunos, listarTurmas, listarSeries, listarProfessores, listarJustificativas } from '@/lib/queries';
 
 function getPeriodoLabel(filters: ReturnType<typeof useDefaultFilters>[0]) {
   if (filters.periodoInicio && filters.periodoFim) {
@@ -34,12 +35,12 @@ export default function RelatoriosSecretaria() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.escola?.listar?.() || Promise.resolve([]),
-      window.api?.aluno?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([]),
-      window.api?.serie?.listar?.() || Promise.resolve([]),
-      window.api?.professor?.listar?.() || Promise.resolve([]),
-      window.api?.justificativa?.listar?.() || Promise.resolve([])
+      listarEscolas(),
+      listarAlunos(),
+      listarTurmas(),
+      listarSeries(),
+      listarProfessores(),
+      listarJustificativas()
     ]).then(([e, a, t, s, p, j]) => {
       setEscolas(e);
       setAlunos(a);
@@ -47,7 +48,7 @@ export default function RelatoriosSecretaria() {
       setSeries(s);
       setProfessores(p || []);
       setJustificativas(j || []);
-    });
+    }).catch(console.error);
   }, []);
 
   const alunosFiltrados = useMemo(() => {

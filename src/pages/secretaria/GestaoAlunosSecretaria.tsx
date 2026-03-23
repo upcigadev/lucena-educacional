@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { listarAlunos, listarEscolas, listarSeries, listarTurmas } from '@/lib/queries';
 
 const cadastrosPendentes = [
   { id: 'p1', nome: 'Felipe Araújo', cpf: '112.233.445-56', escola: 'E.M. Padre Cícero', serie: '2º Ano', criadoPor: 'João Ferreira' },
@@ -22,13 +23,13 @@ export default function GestaoAlunosSecretaria() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.aluno?.listar?.() || Promise.resolve([]),
-      window.api?.escola?.listar?.() || Promise.resolve([]),
-      window.api?.serie?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([])
+      listarAlunos(),
+      listarEscolas(),
+      listarSeries(),
+      listarTurmas()
     ]).then(([a, e, s, t]) => {
       setAlunos(a); setEscolas(e); setSeries(s); setTurmas(t);
-    });
+    }).catch(console.error);
   }, []);
 
   const seriesFiltradas = useMemo(() => filtroEscola ? series.filter(s => s.escolaId === filtroEscola) : [], [filtroEscola, series]);

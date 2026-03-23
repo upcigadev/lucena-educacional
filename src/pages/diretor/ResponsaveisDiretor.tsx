@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
+import { listarResponsaveis, listarEscolas, listarSeries, listarTurmas } from '@/lib/queries';
 
 export default function ResponsaveisDiretor() {
   const [filtroNome, setFiltroNome] = useState('');
@@ -17,13 +18,13 @@ export default function ResponsaveisDiretor() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.responsavel?.listar?.() || Promise.resolve([]),
-      window.api?.escola?.listar?.() || Promise.resolve([]),
-      window.api?.serie?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([])
+      listarResponsaveis(),
+      listarEscolas(),
+      listarSeries(),
+      listarTurmas()
     ]).then(([r, e, s, t]) => {
       setResponsaveis(r); setEscolas(e); setSeries(s); setTurmas(t);
-    });
+    }).catch(console.error);
   }, []);
 
   const escolasDiretor = escolas; // Simulando escola vinculada

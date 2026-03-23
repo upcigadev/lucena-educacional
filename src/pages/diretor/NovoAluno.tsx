@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, UserPlus, Fingerprint, CheckCircle2, Loader2, Search, X, Plus } from 'lucide-react';
 import CadastroResponsavelModal from '@/components/CadastroResponsavelModal';
+import { listarSeries, listarTurmas, listarResponsaveis } from '@/lib/queries';
 
 export default function NovoAluno() {
   const navigate = useNavigate();
@@ -18,12 +19,12 @@ export default function NovoAluno() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.serie?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([]),
-      window.api?.responsavel?.listar?.() || Promise.resolve([])
+      listarSeries(),
+      listarTurmas(),
+      listarResponsaveis()
     ]).then(([s, t, r]) => {
       setSeries(s); setTurmas(t); setResponsaveis(r);
-    });
+    }).catch(console.error);
   }, []);
 
   const [nome, setNome] = useState('');

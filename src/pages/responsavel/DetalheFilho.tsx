@@ -4,6 +4,7 @@ import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ArrowLeft, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { listarAlunos } from '@/lib/queries';
 
 export default function DetalheFilho() {
   const { id } = useParams();
@@ -15,12 +16,7 @@ export default function DetalheFilho() {
   const [justificativas, setJustificativas] = useState<any[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      window.api?.aluno?.listar?.() || Promise.resolve([]),
-      window.api?.justificativa?.listar?.() || Promise.resolve([])
-    ]).then(([a, j]) => {
-      setAlunos(a); setJustificativas(j);
-    });
+    listarAlunos().then(setAlunos).catch(console.error);
   }, []);
 
   const aluno = alunos.find(a => a.id === id);

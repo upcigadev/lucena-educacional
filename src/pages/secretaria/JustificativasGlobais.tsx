@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { toast } from 'sonner';
+import { listarJustificativas } from '@/lib/queries';
 
 export default function JustificativasGlobais() {
   const [justs, setJusts] = useState<any[]>([]);
@@ -9,7 +10,7 @@ export default function JustificativasGlobais() {
   const [action, setAction] = useState<'aprovar' | 'rejeitar' | null>(null);
 
   useEffect(() => {
-    window.api?.justificativa?.listar?.()?.then((res) => {
+    listarJustificativas().then((res) => {
       const pends = res.filter((j: any) => j.status === 'PENDENTE');
       setJusts(pends);
     }).catch(console.error);

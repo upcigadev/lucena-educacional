@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { listarProfessores } from '@/lib/queries';
 
 export default function MeusDadosProfessor() {
   const [professores, setProfessores] = useState<any[]>([]);
 
   useEffect(() => {
-    window.api?.professor?.listar?.()?.then(setProfessores).catch(console.error);
+    listarProfessores().then(setProfessores).catch(console.error);
   }, []);
 
   const prof = professores[0];

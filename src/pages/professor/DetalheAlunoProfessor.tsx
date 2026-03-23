@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { listarAlunos } from '@/lib/queries';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,7 +13,7 @@ export default function DetalheAlunoProfessor() {
   const [alunos, setAlunos] = useState<any[]>([]);
 
   useEffect(() => {
-    window.api?.aluno?.listar?.()?.then(setAlunos).catch(console.error);
+    listarAlunos().then(setAlunos).catch(console.error);
   }, []);
 
   const aluno = alunos.find(a => a.id === id);

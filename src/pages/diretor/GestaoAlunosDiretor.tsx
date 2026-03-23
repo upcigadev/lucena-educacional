@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { listarAlunos } from '@/lib/queries';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const POR_PAGINA = 10;
@@ -13,7 +14,7 @@ export default function GestaoAlunosDiretor() {
   const [alunosEscola, setAlunosEscola] = useState<any[]>([]);
 
   useEffect(() => {
-    window.api?.aluno?.listar?.()?.then((res) => setAlunosEscola(res)).catch(console.error);
+    listarAlunos().then((res) => setAlunosEscola(res)).catch(console.error);
   }, []);
 
   const seriesUnicas = [...new Set(alunosEscola.map((a: any) => a.turma?.serie?.nome).filter(Boolean))];

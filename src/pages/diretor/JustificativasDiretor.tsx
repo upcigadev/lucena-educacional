@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { listarJustificativas } from '@/lib/queries';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { toast } from 'sonner';
@@ -10,7 +11,7 @@ export default function JustificativasDiretor() {
   const [detalheId, setDetalheId] = useState<string | null>(null);
 
   useEffect(() => {
-    window.api?.justificativa?.listar?.()?.then(setJustificativas).catch(console.error);
+    listarJustificativas().then(setJustificativas).catch(console.error);
   }, []);
 
   const handleConfirm = () => {

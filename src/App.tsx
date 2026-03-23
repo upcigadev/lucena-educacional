@@ -5,8 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth, type PerfilUsuario } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
-import { useEffect } from "react";
-import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import Login from "./pages/Login";
@@ -151,16 +149,6 @@ function AppRoutes() {
 }
 
 const App = () => {
-  useEffect(() => {
-    if (window.api && window.api.onNovaFrequencia) {
-      window.api.onNovaFrequencia((data: any) => {
-        toast(`Frequência Registrada: ${data.aluno?.nome} - ${data.status}`, {
-          description: `Novo acesso no iDFace.`,
-        });
-      });
-    }
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

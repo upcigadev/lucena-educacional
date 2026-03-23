@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { School } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
+import { listarEscolas, listarTurmas } from '@/lib/queries';
 
 export default function PainelEscolasProfessor() {
   const [escolas, setEscolas] = useState<any[]>([]);
@@ -8,11 +9,11 @@ export default function PainelEscolasProfessor() {
 
   useEffect(() => {
     Promise.all([
-      window.api?.escola?.listar?.() || Promise.resolve([]),
-      window.api?.turma?.listar?.() || Promise.resolve([])
+      listarEscolas(),
+      listarTurmas()
     ]).then(([e, t]) => {
       setEscolas(e); setTurmas(t);
-    });
+    }).catch(console.error);
   }, []);
 
   return (
@@ -25,7 +26,7 @@ export default function PainelEscolasProfessor() {
             <Link key={escola.id} to={`/professor/escola/${escola.id}`} className="block">
               <div className="bg-card rounded-lg border p-5 hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-3">
-                  <School className="w-8 h-8 text-primary" />
+                  <GraduationCap className="w-8 h-8 text-primary" />
                   <h3 className="font-semibold text-card-foreground">{escola.nome}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">{turmasEscola.length} turma(s)</p>

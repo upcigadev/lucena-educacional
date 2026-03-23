@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { listarAlunos } from '@/lib/queries';
+import { toast } from 'sonner';
 
 export default function PainelDependentes() {
   const [alunos, setAlunos] = useState<any[]>([]);
 
   useEffect(() => {
-    window.api?.aluno?.listar?.()?.then(setAlunos).catch(console.error);
+    listarAlunos().then(setAlunos).catch(console.error);
   }, []);
 
   const dependentes = alunos;

@@ -1,3 +1,1 @@
-interface Window {
-  api: any;
-}
+// No Electron — all data access goes through Supabase
