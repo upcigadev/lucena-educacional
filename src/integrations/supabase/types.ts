@@ -107,10 +107,12 @@ export type Database = {
       alunos: {
         Row: {
           ativo: boolean
+          biometria_cadastrada: boolean
           created_at: string
           data_nascimento: string | null
           escola_id: string
           id: string
+          idface_user_id: number | null
           matricula: string
           nome_completo: string
           responsavel_id: string | null
@@ -118,10 +120,12 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          biometria_cadastrada?: boolean
           created_at?: string
           data_nascimento?: string | null
           escola_id: string
           id?: string
+          idface_user_id?: number | null
           matricula: string
           nome_completo: string
           responsavel_id?: string | null
@@ -129,10 +133,12 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          biometria_cadastrada?: boolean
           created_at?: string
           data_nascimento?: string | null
           escola_id?: string
           id?: string
+          idface_user_id?: number | null
           matricula?: string
           nome_completo?: string
           responsavel_id?: string | null
@@ -158,6 +164,41 @@ export type Database = {
             columns: ["turma_id"]
             isOneToOne: false
             referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      frequencia_catraca: {
+        Row: {
+          aluno_id: string
+          created_at: string
+          data_hora: string
+          dispositivo_ip: string | null
+          id: string
+          processado: boolean
+        }
+        Insert: {
+          aluno_id: string
+          created_at?: string
+          data_hora?: string
+          dispositivo_ip?: string | null
+          id?: string
+          processado?: boolean
+        }
+        Update: {
+          aluno_id?: string
+          created_at?: string
+          data_hora?: string
+          dispositivo_ip?: string | null
+          id?: string
+          processado?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "frequencia_catraca_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
             referencedColumns: ["id"]
           },
         ]

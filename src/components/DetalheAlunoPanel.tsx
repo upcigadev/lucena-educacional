@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
-import { ArrowLeft, Save, Search, UserPlus, UserMinus, MessageSquare, Pencil, Check, X, CalendarIcon, History } from 'lucide-react';
+import { BiometriaModal } from '@/components/BiometriaModal';
+import { ArrowLeft, Save, Search, UserPlus, UserMinus, MessageSquare, Pencil, Check, X, CalendarIcon, History, Fingerprint, Wifi } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -55,10 +56,14 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
   const [modalTurma, setModalTurma] = useState(false);
   const [observacaoTurma, setObservacaoTurma] = useState('');
 
+  // Biometria
+  const [biometriaModalOpen, setBiometriaModalOpen] = useState(false);
+  const [frequencias, setFrequencias] = useState<any[]>([]);
+
   const fetchData = useCallback(async () => {
     if (!alunoId) return;
 
-    const [alunoRes, turmasRes, seriesRes, escolasRes, respsRes, vinculosRes, historicoRes] = await Promise.all([
+    const [alunoRes, turmasRes, seriesRes, escolasRes, respsRes, vinculosRes, historicoRes, frequenciasRes] = await Promise.all([
       supabase.from('alunos').select('*').eq('id', alunoId).single(),
       supabase.from('turmas').select('*').order('nome'),
       supabase.from('series').select('*').order('nome'),
@@ -66,6 +71,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
       supabase.from('responsaveis').select('*, usuario:usuarios(*)'),
       supabase.from('aluno_responsaveis').select('*').eq('aluno_id', alunoId),
       supabase.from('aluno_turma_historico').select('*').eq('aluno_id', alunoId).order('data_inicio', { ascending: false }),
+      supabase.from('frequencia_catraca').select('*').eq('aluno_id', alunoId).order('data_hora', { ascending: false }).limit(60),
     ]);
 
     if (alunoRes.data) {
@@ -80,6 +86,7 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
     setResponsaveis(respsRes.data || []);
     setVinculos(vinculosRes.data || []);
     setHistorico(historicoRes.data || []);
+    setFrequencias(frequenciasRes.data || []);
   }, [alunoId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -207,10 +214,13 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
 
       <Tabs defaultValue="dados" className="w-full">
         <TabsList className="mb-6">
-          <TabsTrigger value="dados">Dados & Turma</TabsTrigger>
+          <TabsTrigger value="dados">Dados &amp; Turma</TabsTrigger>
           <TabsTrigger value="responsaveis">Responsáveis</TabsTrigger>
           <TabsTrigger value="historico">Histórico de Turmas</TabsTrigger>
           <TabsTrigger value="frequencia">Frequência</TabsTrigger>
+          <TabsTrigger value="biometria" className="flex items-center gap-1">
+            <Fingerprint className="w-3.5 h-3.5" /> Biometria
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dados">
@@ -462,6 +472,126 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
             <AttendanceCalendar registros={[]} titulo="Entrada na Escola" percentual={100} />
           </div>
         </TabsContent>
+
+        {/* ─── BIOMETRIA ──────────────────────────────────────── */}
+        <TabsContent value="biometria">
+          <Card>
+            <CardContent className="pt-5 space-y-5">
+              {/* Status + action */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Fingerprint className="w-6 h-6 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Status da Biometria</p>
+                    <p className="text-sm text-muted-foreground">Reconhecimento facial (iDFace)</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {aluno.biometria_cadastrada ? (
+                    <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400">
+                      ✓ Cadastrada
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400">
+                      ⏳ Pendente
+                    </Badge>
+                  )}
+                  {!readOnly && (
+                    <Button
+                      size="sm"
+                      onClick={() => setBiometriaModalOpen(true)}
+                    >
+                      <Fingerprint className="w-4 h-4" />
+                      Gerenciar Biometria
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* idface_user_id field */}
+              {!readOnly && (
+                <div className="border-t pt-4 space-y-2">
+                  <Label className="text-sm font-medium">ID no iDFace (idface_user_id)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Número inteiro do usuário cadastrado no dispositivo Control iD.
+                    Necessário para vincular registros de acesso a este aluno.
+                  </p>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="number"
+                      placeholder="Ex: 1042"
+                      defaultValue={aluno.idface_user_id ?? ''}
+                      id={`idface-${aluno.id}`}
+                      className="max-w-[200px]"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        const input = document.getElementById(`idface-${aluno.id}`) as HTMLInputElement;
+                        const val = input?.value ? parseInt(input.value, 10) : null;
+                        const { error } = await supabase
+                          .from('alunos')
+                          .update({ idface_user_id: val })
+                          .eq('id', aluno.id);
+                        if (error) {
+                          toast.error('Erro ao salvar ID: ' + error.message);
+                        } else {
+                          toast.success('ID no iDFace salvo!');
+                          fetchData();
+                        }
+                      }}
+                    >
+                      <Save className="w-4 h-4" /> Salvar ID
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Recent attendance from catraca */}
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Wifi className="w-4 h-4 text-muted-foreground" />
+                  <h3 className="font-medium text-sm">Registros da Catraca (últimos 60)</h3>
+                </div>
+                {frequencias.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">
+                    Nenhum registro de acesso via catraca encontrado.
+                  </p>
+                ) : (
+                  <div className="border rounded-md overflow-hidden max-h-72 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-secondary">
+                          <th className="text-left p-3 font-medium">Data/Hora</th>
+                          <th className="text-left p-3 font-medium">Dispositivo</th>
+                          <th className="text-left p-3 font-medium">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {frequencias.map((f: any) => (
+                          <tr key={f.id} className="border-b last:border-b-0">
+                            <td className="p-3">
+                              {format(new Date(f.data_hora), 'dd/MM/yyyy HH:mm:ss')}
+                            </td>
+                            <td className="p-3 text-muted-foreground">{f.dispositivo_ip || '—'}</td>
+                            <td className="p-3">
+                              {f.processado ? (
+                                <Badge className="bg-green-100 text-green-800 text-xs">Processado</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-xs">Pendente</Badge>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       <ConfirmModal
@@ -582,6 +712,15 @@ export function DetalheAlunoPanel({ alunoId, backLink, readOnly = false }: Detal
           </div>
         </div>
       )}
+
+      {/* Biometria Modal */}
+      <BiometriaModal
+        open={biometriaModalOpen}
+        onOpenChange={setBiometriaModalOpen}
+        alunoId={aluno.id}
+        nomeAluno={aluno.nome_completo}
+        onSuccess={fetchData}
+      />
     </div>
   );
 }
